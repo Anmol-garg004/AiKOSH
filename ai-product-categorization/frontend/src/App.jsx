@@ -1,811 +1,445 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-const SYSTEM_PROMPT = `You are an expert ONDC (Open Network for Digital Commerce) taxonomy specialist for Indian e-commerce. Analyze the product and return ONLY a valid JSON object (no markdown, no explanation) with this structure:
+// Icons
+const MicIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>;
+const CheckCircleIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>;
+const NetworkIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>;
+const SparklesIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path><path d="M5 3v4"></path><path d="M19 17v4"></path><path d="M3 5h4"></path><path d="M17 19h4"></path></svg>;
+const MenuIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>;
+const TagIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>;
+const UploadIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>;
+const FileIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>;
+const StoreIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"></path><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"></path><path d="M2 7h20"></path><path d="M22 7v3a2 2 0 0 1-2 2v0a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 12v0a2 2 0 0 1-2-2V7"></path></svg>;
 
-{
-  "category": {
-    "l1": "Top-level category (e.g., Apparel & Clothing)",
-    "l2": "Sub-category (e.g., Men's Wear)",
-    "l3": "Product type (e.g., Jackets)",
-    "l4": "Specific variant (e.g., Denim Jackets)"
-  },
-  "attributes": {
-    "material": "Primary material",
-    "target_gender": "Men/Women/Unisex/Kids",
-    "age_group": "Adult/Kids/Infant/All Ages",
-    "usage_type": "Casual/Formal/Ethnic/Sportswear/Party/Daily",
-    "color_family": "Primary color",
-    "closure_type": "Button/Zipper/Slip-on/N/A",
-    "care_instructions": "Machine Wash/Hand Wash/Dry Clean/N/A",
-    "occasion": "Everyday/Festive/Wedding/Office/Sports",
-    "key_feature": "Most important feature in 5-7 words"
-  },
-  "ondc_category_code": "ONDC code e.g. RET12-AB",
-  "hsn_code": "Approximate HSN code",
-  "confidence_score": 0.95,
-  "confidence_reasoning": "One sentence explaining confidence level",
-  "seo_keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"],
-  "similar_categories": ["Alternative category 1", "Alternative category 2"],
-  "seller_tips": ["Actionable tip 1 for MSME seller", "Tip 2", "Tip 3"]
-}
-
-Rules:
-- Use ONDC India taxonomy standards
-- If input is in Hindi, return JSON in English
-- Be specific for Indian market context
-- Return ONLY raw JSON, nothing else`;
-
-const STYLES = `
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap');
-
-:root {
-  --bg-color: #080b14;
-  --primary: #6366f1;
-  --secondary: #8b5cf6;
-  --success: #10b981;
-  --warning: #f59e0b;
-  --error: #ef4444;
-  --text-main: #ffffff;
-  --text-muted: rgba(255,255,255,0.45);
-  --card-bg: rgba(255,255,255,0.04);
-  --border-color: rgba(255,255,255,0.1);
-  --font-main: 'Outfit', sans-serif;
-  --font-mono: 'DM Mono', monospace;
-}
-
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  font-family: var(--font-main);
-  background-color: var(--bg-color);
-  color: var(--text-main);
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-}
-
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: #0d1117; }
-::-webkit-scrollbar-thumb { background: #30363d; border-radius: 2px; }
-
-@keyframes spin { 100% { transform: rotate(360deg); } }
-@keyframes float { 
-  0% { transform: translateY(0); }
-  50% { transform: translateY(-20px); }
-  100% { transform: translateY(0); }
-}
-@keyframes pulse { 
-  0% { opacity: 0.3; }
-  50% { opacity: 0.7; }
-  100% { opacity: 0.3; }
-}
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.particles-container {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-.blob-1 {
-  position: absolute;
-  top: -10%; left: -10%;
-  width: 50vw; height: 50vw;
-  background: radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 60%);
-}
-
-.blob-2 {
-  position: absolute;
-  bottom: -10%; right: -10%;
-  width: 60vw; height: 60vw;
-  background: radial-gradient(circle, rgba(16,185,129,0.08) 0%, transparent 60%);
-}
-
-.blob-3 {
-  position: absolute;
-  top: 40%; right: 10%;
-  width: 30vw; height: 30vw;
-  background: radial-gradient(circle, rgba(245,158,11,0.06) 0%, transparent 60%);
-}
-
-.particle {
-  position: absolute;
-  background: white;
-  border-radius: 50%;
-  animation: float linear infinite, pulse linear infinite;
-}
-
-.app-wrapper {
-  position: relative;
-  z-index: 10;
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 48px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-}
-
-.glass-card {
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 20px;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  padding: 24px;
-}
-
-.title-gradient {
-  background: linear-gradient(135deg, #ffffff, #a5b4fc);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  font-weight: 900;
-  font-size: clamp(32px, 5vw, 48px);
-  line-height: 1.1;
-  text-align: center;
-}
-
-.input-field {
-  width: 100%;
-  background: rgba(0,0,0,0.3);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 16px;
-  color: white;
-  font-family: var(--font-main);
-  font-size: 16px;
-  transition: all 0.3s ease;
-}
-
-.input-field:focus {
-  outline: none;
-  border-color: rgba(99,102,241,0.5);
-  box-shadow: 0 0 0 2px rgba(99,102,241,0.1);
-}
-
-textarea.input-field {
-  resize: vertical;
-  min-height: 120px;
-}
-
-.btn-primary {
-  background: linear-gradient(135deg, var(--primary), var(--secondary));
-  border: none;
-  border-radius: 12px;
-  color: white;
-  padding: 16px 32px;
-  font-family: inherit;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 8px 32px rgba(99,102,241,0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.btn-primary:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 40px rgba(99,102,241,0.4);
-}
-
-.btn-primary:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: transparent;
-  border: 1px solid var(--border-color);
-  color: white;
-  padding: 16px;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-  flex-shrink: 0;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: rgba(255,255,255,0.05);
-}
-
-.loader-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px;
-  gap: 24px;
-}
-
-.rings {
-  position: relative;
-  width: 64px;
-  height: 64px;
-}
-
-.ring {
-  position: absolute;
-  border-radius: 50%;
-  border: 2px solid transparent;
-  animation: spin linear infinite;
-}
-
-.ring-1 {
-  inset: 0;
-  border-top-color: var(--primary);
-  animation-duration: 1s;
-}
-
-.ring-2 {
-  inset: 8px;
-  border-right-color: var(--success);
-  animation-duration: 1.5s;
-  animation-direction: reverse;
-}
-
-.ring-3 {
-  inset: 16px;
-  border-bottom-color: var(--warning);
-  animation-duration: 2s;
-}
-
-.tab-btn {
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  padding: 12px 24px;
-  font-family: inherit;
-  font-weight: 500;
-  font-size: 14px;
-  cursor: pointer;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-}
-
-.tab-btn.active {
-  background: rgba(99,102,241,0.2);
-  color: #c4b5fd;
-}
-
-.mono-pill {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  padding: 4px 12px;
-  border-radius: 4px;
-  background: rgba(0,0,0,0.5);
-  border: 1px solid var(--border-color);
-  color: var(--text-muted);
-}
-
-.fade-in {
-  animation: fadeIn 0.4s ease forwards;
-}
-
-.history-card {
-  border: 1px solid var(--border-color);
-  background: rgba(255,255,255,0.02);
-  border-radius: 12px;
-  padding: 16px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.history-card:hover {
-  background: rgba(255,255,255,0.04);
-  border-color: rgba(99,102,241,0.3);
-}
-
-.badge-top {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(99,102,241,0.1);
-  border: 1px solid rgba(99,102,241,0.2);
-  padding: 6px 16px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 500;
-  color: #a5b4fc;
-}
-
-.pulsing-dot {
-  width: 6px;
-  height: 6px;
-  background: #a5b4fc;
-  border-radius: 50%;
-  box-shadow: 0 0 10px #a5b4fc;
-  animation: pulse 1.5s infinite;
-}
-`;
-
-const Loader = () => (
-    <div className="loader-container fade-in">
-        <div className="rings">
-            <div className="ring ring-1" />
-            <div className="ring ring-2" />
-            <div className="ring ring-3" />
-        </div>
-        <div style={{ textAlign: 'center' }}>
-            <p style={{ fontWeight: 600, color: '#fff', fontSize: '18px' }}>AI Analysis in Progress</p>
-            <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginTop: '4px' }}>Mapping to ONDC taxonomy...</p>
-        </div>
-    </div>
-);
-
-const ConfidenceRing = ({ score }) => {
-    const percentage = Math.round((parseFloat(score) || 0) * 100);
-    const color = percentage >= 85 ? 'var(--success)' : percentage >= 65 ? 'var(--warning)' : 'var(--error)';
-    const radius = 30;
-    const circumference = 2 * Math.PI * radius;
-    const strokeDashoffset = Math.max(0, circumference - ((percentage / 100) * circumference));
-
-    return (
-        <div style={{ position: 'relative', width: '80px', height: '80px', flexShrink: 0 }}>
-            <svg width="80" height="80" viewBox="0 0 80 80" style={{ transform: 'rotate(-90deg)' }}>
-                <circle cx="40" cy="40" r={radius} fill="transparent" stroke="rgba(255,255,255,0.1)" strokeWidth="6" />
-                <circle
-                    cx="40" cy="40" r={radius}
-                    fill="transparent"
-                    stroke={color}
-                    strokeWidth="6"
-                    strokeDasharray={circumference}
-                    strokeDashoffset={strokeDashoffset}
-                    strokeLinecap="round"
-                    style={{ transition: 'stroke-dashoffset 1s ease-out' }}
-                />
-            </svg>
-            <div style={{
-                position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontFamily: 'var(--font-mono)', fontWeight: 600, fontSize: '16px', color: '#fff'
-            }}>
-                {percentage}%
-            </div>
-        </div>
-    );
-};
-
-const CategoryBreadcrumb = ({ category }) => {
-    if (!category) return null;
-    const parts = [category.l1, category.l2, category.l3, category.l4].filter(Boolean);
-
-    return (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
-            {parts.map((part, i) => {
-                const isLast = i === parts.length - 1;
-                return (
-                    <React.Fragment key={i}>
-                        <div style={{
-                            background: isLast ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.05)',
-                            color: isLast ? '#c4b5fd' : 'var(--text-muted)',
-                            border: `1px solid ${isLast ? 'rgba(99,102,241,0.3)' : 'var(--border-color)'}`,
-                            padding: '6px 14px',
-                            borderRadius: '999px',
-                            fontSize: '13px',
-                            fontWeight: isLast ? 600 : 400
-                        }}>
-                            {part}
-                        </div>
-                        {!isLast && (
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <polyline points="9 18 15 12 9 6"></polyline>
-                            </svg>
-                        )}
-                    </React.Fragment>
-                );
-            })}
-        </div>
-    );
-};
-
-const AttributeTag = ({ label, value }) => (
-    <div style={{
-        background: 'rgba(0,0,0,0.3)',
-        border: '1px solid var(--border-color)',
-        borderRadius: '8px',
-        padding: '12px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '4px'
-    }}>
-        <span style={{ fontSize: '9px', textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.05em' }}>
-            {label.replace(/_/g, ' ')}
-        </span>
-        <span style={{ fontSize: '13px', color: '#fff', fontWeight: 500 }}>
-            {value || 'N/A'}
-        </span>
-    </div>
-);
-
-const SAMPLE_PRODUCTS = [
-    { title: "Men's Blue Denim Jacket", desc: "Classic fit men's blue denim jacket with button closure and 4 pockets. 100% Cotton, machine washable." },
-    { title: "महिलाओं की सिल्क साड़ी", desc: "उत्सव और शादी के लिए सुंदर लाल और सोने की जरी वाली बनारसी सिल्क साड़ी। ब्लाउज पीस के साथ।" },
-    { title: "Leather Sandals for Women", desc: "Casual everyday flat sandals for women. Genuine brown leather with ankle strap." },
-    { title: "Stainless Steel Water Bottle 1L", desc: "Vacuum insulated double-wall steel thermo flask. Keeps water cold for 24 hrs. BPA free." },
-    { title: "Kids Cotton Kurta Set", desc: "Yellow cotton ethnic kurta pajama set for 3-4 year old boys. Perfect for Diwali." }
-];
 
 export default function App() {
-    const [title, setTitle] = useState('');
-    const [description, setDescription] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
-    const [result, setResult] = useState(null);
-    const [activeTab, setActiveTab] = useState('attributes');
-    const [history, setHistory] = useState([]);
-    const resultRef = useRef(null);
-    const [showJson, setShowJson] = useState(false);
+    const [activeTab, setActiveTab] = useState('registration');
+    const [sidebarOpen, setSidebarOpen] = useState(true);
 
-    // Background particles
-    const [particles, setParticles] = useState([]);
-    useEffect(() => {
-        setParticles(Array.from({ length: 20 }).map(() => ({
-            width: Math.random() * 3 + 1 + 'px',
-            height: Math.random() * 3 + 1 + 'px',
-            top: Math.random() * 100 + '%',
-            left: Math.random() * 100 + '%',
-            animationDuration: (Math.random() * 3 + 3) + 's',
-            animationDelay: Math.random() * 2 + 's'
-        })));
-    }, []);
+    // Layout components
+    const Header = () => (
+        <header className="header">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ background: 'transparent', border: 'none', color: '#64748b' }} aria-label="Toggle Sidebar">
+                    <MenuIcon />
+                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '8px', height: '8px', background: '#3b82f6', borderRadius: '50%' }} />
+                    <span style={{ fontWeight: '600', color: '#0f172a', letterSpacing: '-0.02em', fontSize: '18px' }}>
+                        ONDC <span style={{ color: '#2563eb' }}>Vyapar</span> Platform
+                    </span>
+                </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span className="badge badge-neutral">Demo Mode 🚀</span>
+                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#64748b' }}>A</div>
+            </div>
+        </header>
+    );
 
-    const handleCategorize = async (e) => {
-        e?.preventDefault();
-        if (!title.trim()) return;
+    const Sidebar = () => (
+        <div className={`sidebar ${sidebarOpen ? '' : 'closed'}`} style={{ width: sidebarOpen ? '260px' : '0px', overflow: 'hidden' }}>
+            <div style={{ padding: '24px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', color: '#64748b', letterSpacing: '0.05em', marginBottom: '4px' }}>Welcome</div>
+                <div style={{ fontSize: '16px', fontWeight: '600', color: '#fff' }}>MSME Portal</div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', padding: '12px 0' }}>
+                <div
+                    className={`nav-item ${activeTab === 'registration' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('registration')}
+                >
+                    <MicIcon /> Registration (Voice)
+                </div>
+                <div
+                    className={`nav-item ${activeTab === 'categorization' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('categorization')}
+                >
+                    <TagIcon /> AI Categorisation
+                </div>
+                <div
+                    className={`nav-item ${activeTab === 'verification' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('verification')}
+                >
+                    <FileIcon /> Quick Verification
+                </div>
+                <div
+                    className={`nav-item ${activeTab === 'matching' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('matching')}
+                >
+                    <NetworkIcon /> Smart Matching SNP
+                </div>
+            </div>
+        </div>
+    );
 
-        setLoading(true);
-        setError(null);
-        setResult(null);
+    return (
+        <div className="app-layout">
+            <Sidebar />
+            <div className="main-content">
+                <Header />
+                <div className="content-scroll">
+                    <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+                        {activeTab === 'registration' && <RegistrationView />}
+                        {activeTab === 'categorization' && <CategorizationView />}
+                        {activeTab === 'verification' && <VerificationView />}
+                        {activeTab === 'matching' && <MatchingView />}
+                    </div>
+                </div>
+            </div>
 
-        try {
-            // Create user prompt from template
-            const userPrompt = `Product Title: ${title}\nProduct Description: ${description}`;
-
-            // In a real scenario without an API key injected locally, this will fail with 401. 
-            // For demonstration in local without env var, we'll try to use the key if available.
-            // If we only have a mock backend we could call the local backend, but the prompt says to call Anthropic via fetch. 
-            const apiKey = import.meta.env?.VITE_ANTHROPIC_API_KEY || window.anthropicApiKey || '';
-
-            let parsed;
-
-            // Ensure we have a valid key if making direct call (otherwise we must use our mock route).
-            // Taking a hybrid approach for safety so the frontend doesn't just crash.
-            if (apiKey) {
-                const response = await fetch('https://api.anthropic.com/v1/messages', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'anthropic-version': '2023-06-01',
-                        'x-api-key': apiKey,
-                        'anthropic-dangerous-direct-browser-access': 'true'
-                    },
-                    body: JSON.stringify({
-                        model: 'claude-3-sonnet-20240229',
-                        max_tokens: 1000,
-                        system: SYSTEM_PROMPT,
-                        messages: [{ role: 'user', content: userPrompt }]
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error(`API Error: ${response.status} ${response.statusText}`);
-                }
-
-                const data = await response.json();
-                const content = data.content?.[0]?.text || '';
-                const jsonMatch = content.match(/\{[\s\S]*\}/);
-                if (!jsonMatch) throw new Error("Invalid format received from AI.");
-                parsed = JSON.parse(jsonMatch[0]);
-            } else {
-                // Fallback to local API structure if anthropic key is missing
-                const response = await fetch('http://localhost:8000/api/v1/categorize', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ title, description, language: 'en' })
-                });
-
-                if (!response.ok) {
-                    throw new Error("Missing Anthropic API Key and local python backend failed.");
-                }
-                const data = await response.json();
-                // Map local api to expected claude format for the UI
-                parsed = {
-                    category: {
-                        l1: data.category_path?.[0] || 'Unknown',
-                        l2: data.category_path?.[1] || '',
-                        l3: data.category_path?.[2] || '',
-                        l4: data.category_path?.[3] || ''
-                    },
-                    attributes: data.attributes || {},
-                    ondc_category_code: "RET12",
-                    hsn_code: "1234.56",
-                    confidence_score: data.confidence || 0.85,
-                    confidence_reasoning: "Categorized using local mock backend.",
-                    seo_keywords: ["mock", "test", "local"],
-                    similar_categories: ["Mocked Alternative 1", "Mocked Alternative 2"],
-                    seller_tips: ["Add more accurate description for better results.", "Include images."]
-                };
-            }
-
-            setResult(parsed);
-            setHistory(prev => [{ title, parsed, date: new Date() }, ...prev].slice(0, 4));
-
-            setTimeout(() => resultRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
-
-        } catch (err) {
-            setError(err.message || 'Failed to categorize product');
-        } finally {
-            setLoading(false);
+            <style>{`
+        .closed {
+          transform: translateX(-100%);
+          width: 0 !important;
+          padding: 0 !important;
         }
-    };
+      `}</style>
+        </div>
+    );
+}
 
-    const loadSample = (sample) => {
-        setTitle(sample.title);
-        setDescription(sample.desc);
-        setError(null);
-        setResult(null);
+// ----------------------------------------------------------------------------
+// VIEW 1: Voice-based Registration
+// ----------------------------------------------------------------------------
+function RegistrationView() {
+    const [listening, setListening] = useState(false);
+    const [text, setText] = useState('');
+    const [parsedData, setParsedData] = useState(null);
+
+    const simulateVoiceInput = () => {
+        setListening(true);
+        setText("");
+        setParsedData(null);
+
+        setTimeout(() => setText("Hum "), 500);
+        setTimeout(() => setText("Hum Kanpur se "), 1000);
+        setTimeout(() => setText("Hum Kanpur se leather shoes banate hain."), 1600);
+        setTimeout(() => {
+            setListening(false);
+            setParsedData({
+                location: 'Kanpur',
+                material: 'Leather',
+                product: 'Shoes',
+                business_type: 'Manufacturer'
+            });
+        }, 2500);
     };
 
     return (
-        <>
-            <style dangerouslySetInnerHTML={{ __html: STYLES }} />
-
-            <div className="particles-container">
-                <div className="blob-1" />
-                <div className="blob-2" />
-                <div className="blob-3" />
-                {particles.map((p, i) => (
-                    <div key={i} className="particle" style={p} />
-                ))}
+        <div className="animate-fade-in">
+            <div style={{ marginBottom: '24px' }}>
+                <h2 style={{ fontSize: '24px', marginBottom: '8px' }}>1️⃣ Voice-based Auto Registration</h2>
+                <p style={{ color: 'var(--text-muted)' }}>Tap the microphone and speak naturally (e.g. Hindi/English mixed). The AI will auto-fill your profile.</p>
             </div>
 
-            <div className="app-wrapper">
-                <header style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
-                    <div className="badge-top">
-                        <div className="pulsing-dot" />
-                        ONDC · TEAM INITIATIVE
+            <div className="grid-2">
+                <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', minHeight: '300px' }}>
+                    <button
+                        onClick={simulateVoiceInput}
+                        style={{
+                            width: '80px', height: '80px', borderRadius: '50%', border: 'none',
+                            background: listening ? '#fee2e2' : '#eff6ff',
+                            color: listening ? '#ef4444' : '#3b82f6',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            boxShadow: listening ? '0 0 0 0 rgba(239, 68, 68, 0.7)' : 'none',
+                            animation: listening ? 'pulse-ring 1.5s infinite' : 'none',
+                            cursor: 'pointer', marginBottom: '24px', transition: 'all 0.3s'
+                        }}
+                    >
+                        <MicIcon />
+                    </button>
+                    <div style={{ fontSize: '18px', fontWeight: '500', color: listening ? 'var(--text-main)' : 'var(--text-muted)', minHeight: '60px' }}>
+                        {listening ? text || 'Listening...' : (text || 'Tap to speak: "Hum Kanpur se leather shoes banate hain"')}
                     </div>
-                    <h1 className="title-gradient">MSME Product Asserts</h1>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '18px', textAlign: 'center', maxWidth: '600px' }}>
-                        Instantly map your inventory to the official ONDC taxonomy framework using AI.
-                    </p>
-                </header>
+                </div>
 
-                <main style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                    <form className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }} onSubmit={handleCategorize}>
+                <div className="card">
+                    <h3 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <StoreIcon /> Business Profile Preview
+                    </h3>
 
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
-                            {SAMPLE_PRODUCTS.map((prod, i) => (
-                                <button
-                                    key={i} type="button"
-                                    onClick={() => loadSample(prod)}
-                                    style={{
-                                        background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)',
-                                        color: '#c4b5fd', fontSize: '12px', padding: '6px 12px', borderRadius: '999px',
-                                        cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s'
-                                    }}
-                                    onMouseOver={e => e.target.style.background = 'rgba(255,255,255,0.1)'}
-                                    onMouseOut={e => e.target.style.background = 'rgba(255,255,255,0.05)'}
-                                >
-                                    {prod.title}
-                                </button>
-                            ))}
-                        </div>
-
-                        <div>
-                            <label style={{ display: 'block', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '8px' }}>Product Title *</label>
-                            <input
-                                type="text"
-                                className="input-field"
-                                placeholder="Enter exact product name..."
-                                value={title}
-                                onChange={e => setTitle(e.target.value)}
-                                required
-                                disabled={loading}
-                            />
-                        </div>
-
-                        <div>
-                            <label style={{ display: 'block', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '8px' }}>Product Description</label>
-                            <textarea
-                                className="input-field"
-                                placeholder="Include material, details, audience..."
-                                value={description}
-                                onChange={e => setDescription(e.target.value)}
-                                disabled={loading}
-                            />
-                        </div>
-
-                        <div style={{ display: 'flex', gap: '16px', paddingTop: '8px' }}>
-                            <button
-                                type="button"
-                                onClick={() => { setTitle(''); setDescription(''); setResult(null); setError(null); }}
-                                className="btn-secondary"
-                                disabled={loading}
-                            >
-                                Clear
-                            </button>
-                            <button type="submit" className="btn-primary" style={{ flexGrow: 1 }} disabled={loading || !title}>
-                                {loading ? (
-                                    <><span style={{ display: 'inline-block', width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 1s linear infinite' }} /> Analyzing...</>
-                                ) : 'Categorize Product'}
-                            </button>
-                        </div>
-                    </form>
-
-                    {error && (
-                        <div className="glass-card fade-in" style={{ borderColor: 'var(--error)', background: 'rgba(239, 68, 68, 0.1)', display: 'flex', gap: '12px', alignItems: 'center' }}>
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--error)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                            <div style={{ color: '#fca5a5' }}>{error}</div>
-                        </div>
-                    )}
-
-                    {loading && <Loader />}
-
-                    {result && (
-                        <div className="glass-card fade-in" ref={resultRef} style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '24px' }}>
-                                <div style={{ flexGrow: 1 }}>
-                                    <h3 style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Predicted ONDC Taxonomy</h3>
-                                    <CategoryBreadcrumb category={result.category} />
-
-                                    <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
-                                        <div className="mono-pill">ONDC: {result.ondc_category_code}</div>
-                                        <div className="mono-pill">HSN: {result.hsn_code || 'N/A'}</div>
-                                    </div>
-                                </div>
-
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                                    <div style={{ textAlign: 'right', maxWidth: '200px' }}>
-                                        <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                                            {result.confidence_reasoning}
-                                        </div>
-                                    </div>
-                                    <ConfidenceRing score={result.confidence_score} />
-                                </div>
-                            </div>
-
-                            <div style={{ borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)', display: 'flex' }}>
-                                {['attributes', 'seo & keywords', 'seller tips'].map(tab => (
-                                    <button
-                                        key={tab}
-                                        className={`tab-btn ${activeTab === tab ? 'active' : ''}`}
-                                        onClick={() => setActiveTab(tab)}
-                                        style={{ flex: 1, textTransform: 'capitalize', borderRadius: 0 }}
-                                    >
-                                        {tab}
-                                    </button>
-                                ))}
-                            </div>
-
-                            <div style={{ minHeight: '200px' }} className="fade-in" key={activeTab}>
-                                {activeTab === 'attributes' && (
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '12px' }}>
-                                        {Object.entries(result.attributes || {}).map(([key, val]) => (
-                                            <AttributeTag key={key} label={key} value={val} />
-                                        ))}
-                                    </div>
-                                )}
-
-                                {activeTab === 'seo & keywords' && (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                                        <div>
-                                            <h4 style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '12px' }}>SEO Tags for Listing</h4>
-                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                                                {(result.seo_keywords || []).map((kw, i) => (
-                                                    <div key={i} style={{ background: 'rgba(99,102,241,0.1)', color: '#c4b5fd', padding: '6px 12px', borderRadius: '6px', fontSize: '13px' }}>
-                                                        #{kw.replace(/\s+/g, '')}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <h4 style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '12px' }}>Similar Mappings</h4>
-                                            <ul style={{ color: 'white', fontSize: '14px', paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                                {(result.similar_categories || []).map((cat, i) => (
-                                                    <li key={i}>{cat}</li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {activeTab === 'seller tips' && (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                        {(result.seller_tips || []).map((tip, i) => (
-                                            <div key={i} style={{
-                                                borderLeft: '3px solid var(--success)',
-                                                background: 'rgba(255,255,255,0.03)',
-                                                padding: '16px',
-                                                borderRadius: '0 8px 8px 0',
-                                                display: 'flex', gap: '12px', alignItems: 'flex-start'
-                                            }}>
-                                                <div style={{ background: 'var(--success)', color: '#000', width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '12px', flexShrink: 0 }}>
-                                                    {i + 1}
-                                                </div>
-                                                <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.9)', lineHeight: 1.6 }}>
-                                                    {tip}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
-                            <div>
-                                <button
-                                    onClick={() => setShowJson(!showJson)}
-                                    style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
-                                >
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        {showJson ? <polyline points="18 15 12 9 6 15" /> : <polyline points="6 9 12 15 18 9" />}
-                                    </svg>
-                                    {showJson ? 'Hide Raw JSON' : 'View Raw API Response'}
-                                </button>
-
-                                {showJson && (
-                                    <pre className="fade-in" style={{
-                                        marginTop: '12px', background: '#0d1117', border: '1px solid var(--border-color)',
-                                        padding: '16px', borderRadius: '8px', overflowX: 'auto',
-                                        fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--success)'
-                                    }}>
-                                        {JSON.stringify(result, null, 2)}
-                                    </pre>
-                                )}
-                            </div>
-
-                        </div>
-                    )}
-
-                    {history.length > 0 && !loading && !result && (
-                        <div className="fade-in" style={{ marginTop: '24px' }}>
-                            <h3 style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '16px' }}>Recent Classifications</h3>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                {history.map((item, i) => (
-                                    <div key={i} className="history-card" onClick={() => {
-                                        setTitle(item.title);
-                                        setResult(item.parsed);
-                                    }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <div>
-                                                <div style={{ fontWeight: 500, color: 'white', marginBottom: '4px' }}>{item.title}</div>
-                                                <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                                                    {item.parsed.category?.l4 || item.parsed.category?.l3 || item.parsed.category?.l1}
-                                                </div>
-                                            </div>
-                                            <div style={{ color: (item.parsed.confidence_score || 0) >= 0.85 ? 'var(--success)' : 'var(--warning)', fontWeight: 600, fontSize: '14px' }}>
-                                                {Math.round((item.parsed.confidence_score || 0) * 100)}%
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                </main>
-
-                <footer style={{ marginTop: '32px', borderTop: '1px solid var(--border-color)', paddingTop: '32px', textAlign: 'center' }}>
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', fontSize: '24px', filter: 'grayscale(1) opacity(0.5)', marginBottom: '16px' }}>
-                        <span>👔</span><span>👟</span><span>🏠</span><span>📱</span><span>🏋️</span>
+                    <div className="input-group">
+                        <label className="input-label">Identified Product / Service</label>
+                        <input type="text" className="input-control" readOnly value={parsedData?.product || ''} placeholder="Waiting for voice..." />
                     </div>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '12px', lineHeight: 1.6 }}>
-                        Powered by Claude AI · Built for ONDC TEAM Initiative<br />
-                        Empowering Indian MSMEs
-                    </p>
-                </footer>
+                    <div className="input-group">
+                        <label className="input-label">Business Type</label>
+                        <input type="text" className="input-control" readOnly value={parsedData?.business_type || ''} placeholder="Waiting for voice..." />
+                    </div>
+                    <div className="grid-2" style={{ gap: '16px' }}>
+                        <div className="input-group">
+                            <label className="input-label">Location</label>
+                            <input type="text" className="input-control" readOnly value={parsedData?.location || ''} placeholder="Waiting for voice..." />
+                        </div>
+                        <div className="input-group">
+                            <label className="input-label">Core Material</label>
+                            <input type="text" className="input-control" readOnly value={parsedData?.material || ''} placeholder="Waiting for voice..." />
+                        </div>
+                    </div>
+                    {parsedData && (
+                        <div style={{ marginTop: '24px', padding: '12px', background: '#ecfdf5', borderRadius: '8px', color: '#065f46', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <CheckCircleIcon /> Registration Data Captured Successfully!
+                        </div>
+                    )}
+                </div>
             </div>
-        </>
+        </div>
+    );
+}
+
+// ----------------------------------------------------------------------------
+// VIEW 2: AI Product Categorisation
+// ----------------------------------------------------------------------------
+function CategorizationView() {
+    const [desc, setDesc] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [result, setResult] = useState(null);
+
+    const sample = "Handmade cotton kurti for women";
+
+    const handleCategorize = () => {
+        if (!desc) return;
+        setLoading(true);
+        setResult(null);
+        // Simulate AI Mock Response based on prompt
+        setTimeout(() => {
+            setResult({
+                path: ["Apparel", "Women", "Ethnic Wear", "Kurti"],
+                material: "Cotton",
+                category: "Kurti",
+                tags: ["Handmade", "Women", "Apparel"]
+            });
+            setLoading(false);
+        }, 1200);
+    }
+
+    return (
+        <div className="animate-fade-in">
+            <div style={{ marginBottom: '24px' }}>
+                <h2 style={{ fontSize: '24px', marginBottom: '8px' }}>2️⃣ AI Product Categorisation</h2>
+                <p style={{ color: 'var(--text-muted)' }}>Type exactly what you sell without worrying about formats. We map it to ONDC taxonomy.</p>
+            </div>
+
+            <div className="card" style={{ marginBottom: '24px' }}>
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+                    <button onClick={() => setDesc(sample)} style={{ fontSize: '12px', background: '#f1f5f9', border: '1px solid #e2e8f0', padding: '4px 12px', borderRadius: '999px', color: '#475569' }}>
+                        Try: "Handmade cotton kurti for women"
+                    </button>
+                </div>
+                <textarea
+                    className="input-control"
+                    rows="3"
+                    placeholder="Describe your product here..."
+                    value={desc}
+                    onChange={e => setDesc(e.target.value)}
+                    style={{ marginBottom: '16px' }}
+                />
+                <button className="btn btn-primary" onClick={handleCategorize} disabled={loading || !desc} style={{ width: '100%' }}>
+                    {loading ? 'Analyzing...' : <><SparklesIcon /> Categorize via AI</>}
+                </button>
+            </div>
+
+            {result && (
+                <div className="card animate-fade-in" style={{ borderLeft: '4px solid #4ade80' }}>
+                    <h3 style={{ fontSize: '16px', marginBottom: '16px', color: '#0f172a' }}>Predicted ONDC Taxonomy</h3>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '24px' }}>
+                        {result.path.map((node, i) => (
+                            <React.Fragment key={i}>
+                                <span className="badge badge-info">{node}</span>
+                                {i < result.path.length - 1 && <span style={{ color: '#94a3b8' }}>▶</span>}
+                            </React.Fragment>
+                        ))}
+                    </div>
+
+                    <div className="grid-3" style={{ gap: '16px' }}>
+                        <div style={{ padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                            <div style={{ fontSize: '12px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>Material</div>
+                            <div style={{ fontWeight: '600' }}>{result.material}</div>
+                        </div>
+                        <div style={{ padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                            <div style={{ fontSize: '12px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>Category</div>
+                            <div style={{ fontWeight: '600' }}>{result.category}</div>
+                        </div>
+                        <div style={{ padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                            <div style={{ fontSize: '12px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>Tags</div>
+                            <div style={{ fontWeight: '600', color: '#64748b' }}>#{result.tags.join(" #")}</div>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ----------------------------------------------------------------------------
+// VIEW 3: Document Auto-Verification
+// ----------------------------------------------------------------------------
+function VerificationView() {
+    const [file, setFile] = useState(null);
+    const [status, setStatus] = useState('idle'); // idle, verifying, success, error
+
+    const handleUpload = () => {
+        setStatus('verifying');
+        setTimeout(() => {
+            setStatus('success');
+        }, 2000);
+    }
+
+    return (
+        <div className="animate-fade-in">
+            <div style={{ marginBottom: '24px' }}>
+                <h2 style={{ fontSize: '24px', marginBottom: '8px' }}>3️⃣ Document Auto-Verification</h2>
+                <p style={{ color: 'var(--text-muted)' }}>Upload GST, PAN, or Udyam copies. Our Verification AI extracts the data and validates via mock API.</p>
+            </div>
+
+            <div className="grid-2">
+                <div className="card">
+                    <div
+                        style={{
+                            border: '2px dashed #cbd5e1', borderRadius: '12px', padding: '40px 20px',
+                            textAlign: 'center', background: '#f8fafc', cursor: 'pointer', transition: 'all 0.2s',
+                            borderColor: file ? '#3b82f6' : '#cbd5e1'
+                        }}
+                        onClick={() => { setFile("GST_Certificate.pdf"); setStatus('idle'); }}
+                    >
+                        <UploadIcon />
+                        <div style={{ marginTop: '12px', fontWeight: '500' }}>{file ? file : 'Click to Upload Document'}</div>
+                        <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>Supports PDF, JPG, PNG</div>
+                    </div>
+                    <button
+                        className="btn btn-primary"
+                        style={{ width: '100%', marginTop: '16px' }}
+                        disabled={!file || status === 'verifying' || status === 'success'}
+                        onClick={handleUpload}
+                    >
+                        {status === 'verifying' ? 'Verifying with NSIC...' : 'Run Auto-Verification'}
+                    </button>
+                </div>
+
+                <div>
+                    {status === 'verifying' && (
+                        <div className="card animate-fade-in" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100%' }}>
+                            <div style={{ width: '40px', height: '40px', border: '3px solid #f1f5f9', borderTopColor: '#3b82f6', borderRadius: '50%' }} className="animate-spin" />
+                            <div style={{ marginTop: '16px', fontWeight: '500', color: '#64748b' }}>Extracting text (OCR) & validating...</div>
+                        </div>
+                    )}
+                    {status === 'success' && (
+                        <div className="card animate-fade-in" style={{ borderLeft: '4px solid #10b981', minHeight: '100%' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                                <h3 style={{ fontSize: '16px' }}>Extraction Results</h3>
+                                <span className="badge badge-success">Valid Document</span>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px' }}>
+                                    <span style={{ color: 'var(--text-muted)', fontSize: '14px' }}>Document Type</span>
+                                    <span style={{ fontWeight: '500', fontSize: '14px' }}>GST Certificate</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px' }}>
+                                    <span style={{ color: 'var(--text-muted)', fontSize: '14px' }}>GSTIN extracted</span>
+                                    <span style={{ fontWeight: '500', fontSize: '14px', fontFamily: 'var(--font-mono)' }}>09AAACC1206D1Z1</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px' }}>
+                                    <span style={{ color: 'var(--text-muted)', fontSize: '14px' }}>Registry Check</span>
+                                    <span style={{ fontWeight: '500', color: '#10b981', fontSize: '14px' }}>Match Found ✓</span>
+                                </div>
+                            </div>
+                            <div style={{ marginTop: '16px', fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>
+                                "NSIC ko manual kaam kam karna pade." - Approved by AI Bot
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ----------------------------------------------------------------------------
+// VIEW 4: Smart Matching Engine
+// ----------------------------------------------------------------------------
+function MatchingView() {
+    const [analyzing, setAnalyzing] = useState(false);
+    const [results, setResults] = useState(null);
+
+    const handleMatch = () => {
+        setAnalyzing(true);
+        setResults(null);
+        setTimeout(() => {
+            setResults([
+                {
+                    name: "Udaan B2B ONDC Node",
+                    region: "North India (Kanpur/Delhi)",
+                    capacity_suitability: "High Volume",
+                    success_rate: "94%",
+                    match_score: 98,
+                    reason: "Perfect sync for Leather Apparel from Kanpur with established logistics chain."
+                },
+                {
+                    name: "Mystore Hub",
+                    region: "Pan India",
+                    capacity_suitability: "Medium Volume",
+                    success_rate: "89%",
+                    match_score: 85,
+                    reason: "Good for boutique ethnic wear but takes slightly higher margins on heavy goods."
+                }
+            ]);
+            setAnalyzing(false);
+        }, 1500);
+    }
+
+    return (
+        <div className="animate-fade-in">
+            <div style={{ marginBottom: '24px' }}>
+                <h2 style={{ fontSize: '24px', marginBottom: '8px' }}>4️⃣ Smart Matching Engine</h2>
+                <p style={{ color: 'var(--text-muted)' }}>Match the MSE's profile (Product, Region, Production Capacity) with the best Seller Network Participant (SNP).</p>
+            </div>
+
+            <div className="card" style={{ marginBottom: '24px', background: 'linear-gradient(to right, #0f172a, #1e293b)', color: 'white' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                    <div>
+                        <div style={{ fontSize: '12px', textTransform: 'uppercase', color: '#94a3b8', marginBottom: '4px' }}>Current MSE Profile Detected</div>
+                        <div style={{ fontSize: '18px', fontWeight: '600' }}>Kanpur Leather Goods Manufacturer</div>
+                        <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                            <span className="badge" style={{ background: 'rgba(255,255,255,0.1)', color: '#cbd5e1' }}>Location: UP West</span>
+                            <span className="badge" style={{ background: 'rgba(255,255,255,0.1)', color: '#cbd5e1' }}>Capacity: 500 units/mo</span>
+                        </div>
+                    </div>
+                    <button className="btn btn-primary" onClick={handleMatch} disabled={analyzing} style={{ background: '#3b82f6' }}>
+                        {analyzing ? 'Running Algorithm...' : 'Find Best SNP Partners'}
+                    </button>
+                </div>
+            </div>
+
+            {results && (
+                <div className="grid-2 animate-fade-in">
+                    {results.map((snp, i) => (
+                        <div key={i} className="card" style={{ borderTop: i === 0 ? '4px solid #3b82f6' : '1px solid #e2e8f0', position: 'relative', overflow: 'hidden' }}>
+                            {i === 0 && <div style={{ position: 'absolute', top: '12px', right: '12px', background: '#dbeafe', color: '#1d4ed8', fontSize: '10px', fontWeight: 'bold', padding: '4px 8px', borderRadius: '4px', textTransform: 'uppercase' }}>Top Match</div>}
+
+                            <h3 style={{ fontSize: '18px', marginBottom: '16px' }}>{snp.name}</h3>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+                                <div style={{ fontSize: '13px', color: '#475569' }}><strong>Region:</strong> {snp.region}</div>
+                                <div style={{ fontSize: '13px', color: '#475569' }}><strong>Volume Match:</strong> {snp.capacity_suitability}</div>
+                                <div style={{ fontSize: '13px', color: '#475569' }}><strong>Past Success Rate:</strong> {snp.success_rate}</div>
+                            </div>
+
+                            <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                    <span style={{ fontSize: '12px', fontWeight: '600', color: '#64748b' }}>Match Score</span>
+                                    <span style={{ fontSize: '18px', fontWeight: '700', color: i === 0 ? '#2563eb' : '#0f172a' }}>{snp.match_score}%</span>
+                                </div>
+                                <p style={{ fontSize: '12px', color: '#64748b', lineHeight: 1.4 }}>{snp.reason}</p>
+                            </div>
+
+                            <button className="btn btn-outline" style={{ width: '100%', marginTop: '16px' }}>
+                                Send Partnership Request
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
     );
 }
