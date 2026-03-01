@@ -1,0 +1,10 @@
+{
+    "buildCommand": "cd ai-product-categorization/frontend && npm install && npm run build",
+    "outputDirectory": "ai-product-categorization/frontend/dist",
+    "rewrites": [
+        {
+            "source": "/(.*)",
+            "destination": "/index.html"
+        }
+    ]
+}
