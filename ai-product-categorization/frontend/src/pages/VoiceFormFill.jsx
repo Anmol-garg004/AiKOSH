@@ -16,6 +16,51 @@ export default function VoiceFormFill({ params }) {
     const [extractedData, setExtractedData] = useState({});
     const [isConfirmed, setIsConfirmed] = useState(false);
     const [isVerifying, setIsVerifying] = useState(false);
+    const [guidedActive, setGuidedActive] = useState(false);
+
+    const getNextUnfilledField = () => {
+        if (!formDef) return null;
+        return formDef.fields.find(f => !extractedData[f] || !extractedData[f].value);
+    };
+
+    const startGuidedInterview = () => {
+        setGuidedActive(true);
+        const nextField = getNextUnfilledField();
+        if (nextField) {
+            const readable = nextField.replace(/_/g, ' ').toUpperCase();
+            setStatus(`Guided Mode: Asking for ${readable}`);
+            window.speechSynthesis.cancel();
+            const msg = new SpeechSynthesisUtterance();
+            msg.text = `Please tell me your ${readable}`;
+            msg.lang = 'hi-IN';
+            window.speechSynthesis.speak(msg);
+        } else {
+            alert("Form is already fully filled!");
+        }
+    };
+
+    useEffect(() => {
+        // Trigger next question whenever extractedData changes if we are in guided mode
+        if (!guidedActive || !formDef) return;
+
+        const nextField = getNextUnfilledField();
+        if (nextField) {
+            const readable = nextField.replace(/_/g, ' ').toUpperCase();
+            setStatus(`Guided Mode: Asking for ${readable}`);
+            window.speechSynthesis.cancel();
+            const msg = new SpeechSynthesisUtterance();
+            msg.text = `Got it. Now, what is your ${readable}?`;
+            msg.lang = 'hi-IN';
+            setTimeout(() => window.speechSynthesis.speak(msg), 500);
+        } else {
+            setStatus('Guided Mode: All fields completed!');
+            const msg = new SpeechSynthesisUtterance();
+            msg.text = `Thank you. The form is fully completed. You can now review and submit your application.`;
+            msg.lang = 'hi-IN';
+            setTimeout(() => window.speechSynthesis.speak(msg), 500);
+            setGuidedActive(false);
+        }
+    }, [extractedData]);
 
     const handleTranscriptUpdate = (newText) => {
         setTranscript(newText);
@@ -60,8 +105,20 @@ export default function VoiceFormFill({ params }) {
         setStatus('Processing NLP Engine...');
         try {
             const res = await submitVoiceData(formId, transcript);
-            setExtractedData(res.extracted_fields);
+            setExtractedData(prev => {
+                const merged = { ...prev };
+                for (let key in res.extracted_fields) {
+                    merged[key] = res.extracted_fields[key];
+                }
+                return merged;
+            });
             setStatus('Form Auto-filled Successfully');
+
+            // Clear transcript for the next guided step
+            if (guidedActive) {
+                setTranscript('');
+                setIsConfirmed(false);
+            }
         } catch (err) {
             console.error(err);
             setStatus('Failed to extract data');
@@ -98,9 +155,19 @@ export default function VoiceFormFill({ params }) {
                         onTranscriptUpdate={handleTranscriptUpdate}
                         onStatusChange={setStatus}
                     />
-                    <p className="mic-instruction">
-                        Speak your full business details clearly.
+                    <p className="mic-instruction" style={{ color: guidedActive ? 'var(--primary)' : 'var(--text-muted)', fontWeight: guidedActive ? '600' : 'normal' }}>
+                        {guidedActive ? `AI is listening to your answer...` : `Speak your full business details clearly.`}
                     </p>
+
+                    {!guidedActive && (
+                        <button
+                            className="btn btn-primary"
+                            style={{ marginTop: '12px', background: 'var(--success)', borderColor: 'var(--success)' }}
+                            onClick={startGuidedInterview}
+                        >
+                            Start Step-by-Step AI Interview 🤖
+                        </button>
+                    )}
                 </div>
 
                 <TranscriptDisplay transcript={transcript} />
