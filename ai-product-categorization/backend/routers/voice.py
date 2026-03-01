@@ -1,7 +1,9 @@
 from fastapi import APIRouter
 import time
-from models.schemas import ProcessVoiceRequest, ProcessVoiceResponse, FieldExtraction, GeneratePromptRequest, GeneratePromptResponse
+from fastapi.responses import StreamingResponse
+from models.schemas import ProcessVoiceRequest, ProcessVoiceResponse, FieldExtraction, GeneratePromptRequest, GeneratePromptResponse, SpeakRequest
 from services.voice_extractor import extractor
+import edge_tts
 
 router = APIRouter(
     prefix="/api/v1/voice",
@@ -38,3 +40,33 @@ def process_voice(req: ProcessVoiceRequest):
 def generate_prompt(req: GeneratePromptRequest):
     prompt = extractor.generate_prompt(req.field, req.language)
     return GeneratePromptResponse(prompt=prompt)
+
+VOICE_MAP = {
+    "hi-IN": "hi-IN-SwaraNeural",
+    "en-IN": "en-IN-NeerjaNeural",
+    "ta-IN": "ta-IN-PallaviNeural",
+    "te-IN": "te-IN-ShrutiNeural",
+    "mr-IN": "mr-IN-AarohiNeural",
+    "bn-IN": "bn-IN-TanishaaNeural",
+    "gu-IN": "gu-IN-DhwaniNeural",
+    "kn-IN": "kn-IN-SapnaNeural",
+    "ml-IN": "ml-IN-SobhanaNeural",
+    "pa-IN": "pa-IN-OjasNeural", # pa-IN does not have many, fallback on standard
+}
+
+@router.get("/speak")
+async def speak_text(text: str, language: str):
+    voice = VOICE_MAP.get(language, "en-IN-NeerjaNeural")
+    
+    # pa-IN fallback just in case
+    if language == "pa-IN":
+        voice = "en-IN-NeerjaNeural"
+
+    communicate = edge_tts.Communicate(text, voice, rate="-5%")
+    
+    async def generate_audio():
+        async for chunk in communicate.stream():
+            if chunk["type"] == "audio":
+                yield chunk["data"]
+                
+    return StreamingResponse(generate_audio(), media_type="audio/mpeg")

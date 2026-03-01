@@ -40,3 +40,7 @@ class GeneratePromptRequest(BaseModel):
 
 class GeneratePromptResponse(BaseModel):
     prompt: str
+
+class SpeakRequest(BaseModel):
+    text: str
+    language: str

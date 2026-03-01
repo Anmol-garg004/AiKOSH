@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from "wouter";
-import { fetchForms, submitVoiceData, generateGuidedPrompt } from '../services/api';
+import { fetchForms, submitVoiceData, generateGuidedPrompt, API_URL } from '../services/api';
 
 import MicrophoneButton from '../components/MicrophoneButton';
 import TranscriptDisplay from '../components/TranscriptDisplay';
@@ -19,26 +19,29 @@ export default function VoiceFormFill({ params }) {
     const [guidedActive, setGuidedActive] = useState(false);
     const [language, setLanguage] = useState('hi-IN');
 
-    // Advanced Voice Selector to force completely natural cloud Indian accents
+    // Advanced Voice Selector linking to Microsoft Azure TTS API Backend stream
     const speakNativeTTS = (text, langCode, onEndCallback) => {
         window.speechSynthesis.cancel();
 
         try {
-            // Extract base language code (e.g., 'ta-IN' -> 'ta')
-            const lang = langCode.split('-')[0];
+            const encodedText = encodeURIComponent(text);
+            const encodedLang = encodeURIComponent(langCode);
+            // Connect directly to the FastAPI Streaming endpoint utilizing Azure Edge TTS
+            const fullUrl = `${API_URL}/voice/speak?text=${encodedText}&language=${encodedLang}`;
 
-            // Generate a direct stream from Google's high-fidelity Cloud TTS endpoint
-            const url = `https://translate.googleapis.com/translate_tts?client=gtx&ie=UTF-8&tl=${lang}&q=${encodeURIComponent(text)}`;
-            const audio = new Audio(url);
+            // To ensure compatibility across local host vs deployed environments we pull the base URL from api.js if possible,
+            // but for simplicity, the application API_URL is mostly same host. Let's dynamically map it.
+            // Better: use the dynamic prefix.
 
-            audio.playbackRate = 0.95; // Slightly slower for conversational tone
+            const audio = new Audio(fullUrl);
+            audio.playbackRate = 1.0;
 
             audio.onended = () => {
                 if (onEndCallback) onEndCallback();
             };
 
             audio.onerror = () => {
-                fallbackSyntheticTTS(text, langCode, onEndCallback);
+                fallbackSyntheticTTS(text, langCode, onEndCallback); // fallback if backend routing fails
             };
 
             audio.play().catch(e => {
