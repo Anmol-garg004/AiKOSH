@@ -19,6 +19,40 @@ export default function VoiceFormFill({ params }) {
     const [guidedActive, setGuidedActive] = useState(false);
     const [language, setLanguage] = useState('hi-IN');
 
+    // Advanced Voice Selector to force Native Indian accents instead of default English robotic voices
+    const speakNativeTTS = (text, langCode, onEndCallback) => {
+        window.speechSynthesis.cancel();
+        const msg = new SpeechSynthesisUtterance(text);
+        msg.lang = langCode;
+        msg.rate = 0.95; // slightly slower for more natural realistic tone
+        msg.pitch = 1.05; // slightly higher pitch
+
+        const voices = window.speechSynthesis.getVoices();
+
+        // 1. Try to find a premium Google Voice for this exact language first
+        let bestVoice = voices.find(v => v.lang.includes(langCode) && v.name.includes('Google'));
+
+        // 2. Try any native voice for this exact language (Microsoft, natural, etc)
+        if (!bestVoice) bestVoice = voices.find(v => v.lang.includes(langCode));
+
+        // 3. Fallback to just the base language code (e.g. 'ta' instead of 'ta-IN')
+        if (!bestVoice && langCode.includes('-')) {
+            const baseLang = langCode.split('-')[0];
+            bestVoice = voices.find(v => v.lang.startsWith(baseLang) && v.name.includes('Google'));
+            if (!bestVoice) bestVoice = voices.find(v => v.lang.startsWith(baseLang));
+        }
+
+        if (bestVoice) {
+            msg.voice = bestVoice;
+        }
+
+        if (onEndCallback) {
+            msg.onend = onEndCallback;
+        }
+
+        window.speechSynthesis.speak(msg);
+    };
+
     const getNextUnfilledField = () => {
         if (!formDef) return null;
         return formDef.fields.find(f => !extractedData[f] || !extractedData[f].value);
@@ -33,13 +67,9 @@ export default function VoiceFormFill({ params }) {
             window.speechSynthesis.cancel();
 
             const p = await generateGuidedPrompt(readable, language);
-            const msg = new SpeechSynthesisUtterance();
-            msg.text = p.prompt;
-            msg.lang = language;
-            msg.onend = () => {
+            speakNativeTTS(p.prompt, language, () => {
                 window.dispatchEvent(new Event('start-mic'));
-            };
-            window.speechSynthesis.speak(msg);
+            });
         } else {
             alert("Form is already fully filled!");
         }
@@ -57,20 +87,13 @@ export default function VoiceFormFill({ params }) {
                 window.speechSynthesis.cancel();
 
                 const p = await generateGuidedPrompt(readable, language);
-                const msg = new SpeechSynthesisUtterance();
-                msg.text = p.prompt;
-                msg.lang = language;
-                msg.onend = () => {
+                setTimeout(() => speakNativeTTS(p.prompt, language, () => {
                     window.dispatchEvent(new Event('start-mic'));
-                };
-                setTimeout(() => window.speechSynthesis.speak(msg), 500);
+                }), 500);
             } else {
                 setStatus('Guided Mode: All fields completed!');
                 const p = await generateGuidedPrompt("COMPLETED", language);
-                const msg = new SpeechSynthesisUtterance();
-                msg.text = p.prompt;
-                msg.lang = language;
-                setTimeout(() => window.speechSynthesis.speak(msg), 500);
+                setTimeout(() => speakNativeTTS(p.prompt, language), 500);
                 setGuidedActive(false);
             }
         };
@@ -90,17 +113,11 @@ export default function VoiceFormFill({ params }) {
         setStatus('Verifying Input...');
 
         window.speechSynthesis.cancel();
-        const msg = new SpeechSynthesisUtterance();
-        msg.text = `You said: ${transcript}. Is this information correct and ready to proceed?`;
-        msg.lang = 'hi-IN';
-
-        msg.onend = () => {
+        speakNativeTTS(`You said: ${transcript}. Is this information correct and ready to proceed?`, 'hi-IN', () => {
             setIsVerifying(false);
             setIsConfirmed(true);
             setStatus('Verified. Ready to Fill Form.');
-        };
-
-        window.speechSynthesis.speak(msg);
+        });
     };
 
     const handleClear = () => {

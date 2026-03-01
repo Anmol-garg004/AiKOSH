@@ -96,7 +96,7 @@ class VoiceExtractorService:
         if field == "COMPLETED":
             prompt_instruction = "Tell the user that the form is completely filled and they can proceed to review and submit."
         else:
-            prompt_instruction = f"Ask the user to creatively provide their `{field}` for a form registration."
+            prompt_instruction = f"Politely ask the user: 'What is your {field}?'"
 
         lang_mapping = {
             "hi-IN": "Hindi (Devanagari script: हिंदी)",
@@ -117,7 +117,7 @@ class VoiceExtractorService:
         Task: {prompt_instruction}
         Language requested: {lang_name} (Code: {language}). You MUST translate your sentence to {lang_name} natively.
         Constraint 1: You must strictly use the native alphabet and script for {lang_name}. Do NOT use Latin/English letters unless the language requested is exactly 'English'.
-        Constraint 2: Return ONLY the exact translated sentence. No English translations alongside it, no quotes, no conversational filler, no markdown. Keep it very short, polite, and natural.
+        Constraint 2: Return ONLY the exact translated sentence. Keep it extremely short, polite, completely natural, and conversational. Do not include quotes or English translations.
         """
         
         try:
