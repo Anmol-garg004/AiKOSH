@@ -28,10 +28,7 @@ export default function CategorizationPage() {
     }
 
     const handleTranscriptUpdate = (newText) => {
-        setDesc(prev => {
-            const prefix = prev ? prev.trim() + ' ' : '';
-            return prefix + newText;
-        });
+        setDesc(newText);
     };
 
     return (

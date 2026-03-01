@@ -18,17 +18,19 @@ export default function MicrophoneButton({ onTranscriptUpdate, onStatusChange })
 
             const rc = new SpeechRecognition();
             rc.continuous = true;
-            rc.interimResults = false; // Set to false to prevent duplicate overlapping transcript fragments
+            rc.interimResults = true;
             rc.lang = 'hi-IN';
 
             rc.onstart = () => {
                 setIsListening(true);
                 onStatusChange('Listening...');
+                onTranscriptUpdate(''); // Clear previous inputs exactly when mic starts
             };
 
             rc.onresult = (event) => {
                 let trans = '';
-                for (let i = event.resultIndex; i < event.results.length; i++) {
+                // Iterate from 0 to capture the whole mic session, enabling real-time "sath sath" replacement
+                for (let i = 0; i < event.results.length; i++) {
                     trans += event.results[i][0].transcript;
                 }
                 onTranscriptUpdate(trans);

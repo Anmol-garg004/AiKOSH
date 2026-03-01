@@ -16,7 +16,7 @@ export default function VoiceFormFill({ params }) {
     const [extractedData, setExtractedData] = useState({});
 
     const handleTranscriptUpdate = (newText) => {
-        setTranscript(prev => (prev ? prev.trim() + ' ' : '') + newText.trim());
+        setTranscript(newText);
     };
 
     useEffect(() => {

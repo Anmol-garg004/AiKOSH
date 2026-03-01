@@ -40,10 +40,7 @@ export default function MatchingPage() {
     }
 
     const handleTranscriptUpdate = (newText) => {
-        setDesc(prev => {
-            const prefix = prev ? prev.trim() + ' ' : '';
-            return prefix + newText;
-        });
+        setDesc(newText);
     };
 
     return (
