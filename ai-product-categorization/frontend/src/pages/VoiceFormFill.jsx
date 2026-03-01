@@ -15,6 +15,10 @@ export default function VoiceFormFill({ params }) {
     const [status, setStatus] = useState('Idle');
     const [extractedData, setExtractedData] = useState({});
 
+    const handleTranscriptUpdate = (newText) => {
+        setTranscript(prev => (prev ? prev.trim() + ' ' : '') + newText.trim());
+    };
+
     useEffect(() => {
         fetchForms().then(forms => {
             const found = forms.find(f => f.id === formId);
@@ -61,7 +65,7 @@ export default function VoiceFormFill({ params }) {
 
                 <div className="mic-container">
                     <MicrophoneButton
-                        onTranscriptUpdate={(t) => setTranscript(t)}
+                        onTranscriptUpdate={handleTranscriptUpdate}
                         onStatusChange={setStatus}
                     />
                     <p className="mic-instruction">

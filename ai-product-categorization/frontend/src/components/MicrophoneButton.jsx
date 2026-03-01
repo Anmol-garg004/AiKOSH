@@ -18,7 +18,7 @@ export default function MicrophoneButton({ onTranscriptUpdate, onStatusChange })
 
             const rc = new SpeechRecognition();
             rc.continuous = true;
-            rc.interimResults = true;
+            rc.interimResults = false; // Set to false to prevent duplicate overlapping transcript fragments
             rc.lang = 'hi-IN';
 
             rc.onstart = () => {
