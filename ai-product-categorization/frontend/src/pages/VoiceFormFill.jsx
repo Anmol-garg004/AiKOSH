@@ -14,9 +14,38 @@ export default function VoiceFormFill({ params }) {
     const [transcript, setTranscript] = useState('');
     const [status, setStatus] = useState('Idle');
     const [extractedData, setExtractedData] = useState({});
+    const [isConfirmed, setIsConfirmed] = useState(false);
+    const [isVerifying, setIsVerifying] = useState(false);
 
     const handleTranscriptUpdate = (newText) => {
         setTranscript(newText);
+        setIsConfirmed(false);
+    };
+
+    const handleVerifyVoice = () => {
+        if (!transcript) return;
+        setIsVerifying(true);
+        setStatus('Verifying Input...');
+
+        window.speechSynthesis.cancel();
+        const msg = new SpeechSynthesisUtterance();
+        msg.text = `You said: ${transcript}. Is this information correct and ready to proceed?`;
+        msg.lang = 'hi-IN';
+
+        msg.onend = () => {
+            setIsVerifying(false);
+            setIsConfirmed(true);
+            setStatus('Verified. Ready to Fill Form.');
+        };
+
+        window.speechSynthesis.speak(msg);
+    };
+
+    const handleClear = () => {
+        setTranscript('');
+        setIsConfirmed(false);
+        setIsVerifying(false);
+        window.speechSynthesis.cancel();
     };
 
     useEffect(() => {
@@ -76,10 +105,16 @@ export default function VoiceFormFill({ params }) {
                 <TranscriptDisplay transcript={transcript} />
 
                 <div className="action-buttons">
-                    <button className="btn btn-outline" onClick={() => setTranscript('')}>Clear</button>
-                    <button className="btn btn-primary" onClick={handleProcess} disabled={!transcript || status.includes('Processing')}>
-                        Process & Fill Form
-                    </button>
+                    <button className="btn btn-outline" onClick={handleClear}>Clear</button>
+                    {!isConfirmed ? (
+                        <button className="btn btn-secondary" onClick={handleVerifyVoice} disabled={!transcript || isVerifying || status === 'Listening...'}>
+                            {isVerifying ? 'Speaking...' : 'Verify Input 🗣️'}
+                        </button>
+                    ) : (
+                        <button className="btn btn-primary" onClick={handleProcess} disabled={!transcript || status.includes('Processing')}>
+                            Process & Fill Form ✅
+                        </button>
+                    )}
                 </div>
             </div>
 

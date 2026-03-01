@@ -1,21 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 
 export default function MicrophoneButton({ onTranscriptUpdate, onStatusChange }) {
     const [isListening, setIsListening] = useState(false);
     const recognitionRef = useRef(null);
-    const latestTranscriptRef = useRef(''); // Track local transcript for TTS callback
-
-    const speakConfirmation = (text) => {
-        if (!text || text.trim() === '') return;
-
-        // Cancel any currently playing speech to avoid overlapping
-        window.speechSynthesis.cancel();
-
-        const msg = new SpeechSynthesisUtterance();
-        msg.text = `You said: ${text}. Is this information correct and ready to proceed?`;
-        msg.lang = 'hi-IN'; // Uses Indian accent/voice, supporting both English & Hindi
-        window.speechSynthesis.speak(msg);
-    };
 
     const toggleListening = () => {
         if (isListening) {
@@ -38,7 +25,6 @@ export default function MicrophoneButton({ onTranscriptUpdate, onStatusChange })
             rc.onstart = () => {
                 setIsListening(true);
                 onStatusChange('Listening...');
-                latestTranscriptRef.current = ''; // Reset local tracking
                 onTranscriptUpdate(''); // Clear previous inputs exactly when mic starts
             };
 
@@ -48,7 +34,6 @@ export default function MicrophoneButton({ onTranscriptUpdate, onStatusChange })
                 for (let i = 0; i < event.results.length; i++) {
                     trans += event.results[i][0].transcript;
                 }
-                latestTranscriptRef.current = trans; // Save to ref for TTS callback
                 onTranscriptUpdate(trans);
             };
 
@@ -61,7 +46,6 @@ export default function MicrophoneButton({ onTranscriptUpdate, onStatusChange })
             rc.onend = () => {
                 setIsListening(false);
                 onStatusChange('Idle');
-                speakConfirmation(latestTranscriptRef.current);
             };
 
             recognitionRef.current = rc;
@@ -71,7 +55,7 @@ export default function MicrophoneButton({ onTranscriptUpdate, onStatusChange })
 
     return (
         <button
-            className={`mic-button ${isListening ? 'active pulsing' : ''}`}
+            className={`mic - button ${isListening ? 'active pulsing' : ''} `}
             onClick={toggleListening}
         >
             <span style={{ fontSize: '32px' }}>{isListening ? '🛑' : '🎙️'}</span>

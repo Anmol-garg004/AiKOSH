@@ -212,6 +212,17 @@ body {
   box-shadow: var(--shadow-md);
 }
 
+.btn-secondary {
+  background: #475569;
+  color: white;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-secondary:hover {
+  background: #334155;
+  box-shadow: var(--shadow-md);
+}
+
 .btn-outline {
   background: white;
   border-color: var(--border);
