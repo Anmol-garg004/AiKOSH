@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import forms, voice
+from routers import forms, voice, categorize
 
 app = FastAPI(title="AI Voice Form Auto-Fill System")
 
@@ -14,6 +14,7 @@ app.add_middleware(
 
 app.include_router(forms.router)
 app.include_router(voice.router)
+app.include_router(categorize.router)
 
 @app.get("/")
 def read_root():

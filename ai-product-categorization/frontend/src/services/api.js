@@ -25,3 +25,13 @@ export const submitFinalForm = async (formId, fields) => {
     if (!res.ok) throw new Error("Form submission failed");
     return res.json();
 };
+
+export const predictCategory = async (description) => {
+    const res = await fetch(`${API_URL}/categorize/predict`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description })
+    });
+    if (!res.ok) throw new Error("Categorization failed");
+    return res.json();
+};

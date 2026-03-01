@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import MicrophoneButton from '../components/MicrophoneButton';
+import { predictCategory } from '../services/api';
 
 export default function CategorizationPage() {
     const [desc, setDesc] = useState('');
@@ -9,24 +10,22 @@ export default function CategorizationPage() {
     const [isConfirmed, setIsConfirmed] = useState(false);
     const [isVerifying, setIsVerifying] = useState(false);
 
-    const handleCategorize = () => {
+    const handleCategorize = async () => {
         if (!desc) return;
         setLoading(true);
         setResult(null);
+        setStatus('Processing...');
 
-        // Mock AI Categorization processing
-        setTimeout(() => {
-            const lowerDesc = desc.toLowerCase();
-            setResult({
-                path: ["Apparel", "Women", "Ethnic Wear", "Kurti"],
-                material: lowerDesc.includes('cotton') ? "Cotton" : (lowerDesc.includes('silk') ? "Silk" : "Mixed"),
-                category: lowerDesc.includes('kurti') ? "Kurti" : "Apparel",
-                gender: "Women",
-                confidence: 96,
-                tags: ["Fashion", "Ethnic", "Indian Wear"]
-            });
+        try {
+            const data = await predictCategory(desc);
+            setResult(data);
+            setStatus('Categorization Complete');
+        } catch (error) {
+            console.error("Categorization error:", error);
+            setStatus('Error processing categorization');
+        } finally {
             setLoading(false);
-        }, 1500);
+        }
     }
 
     const handleTranscriptUpdate = (newText) => {

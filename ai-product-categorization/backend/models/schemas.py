@@ -20,3 +20,16 @@ class ProcessVoiceResponse(BaseModel):
 class SubmitFormRequest(BaseModel):
     form_id: str
     fields: Dict[str, Any]
+
+class CategorizeRequest(BaseModel):
+    description: str
+
+class CategorizeResponse(BaseModel):
+    status: str
+    path: List[str]
+    material: str
+    category: str
+    gender: str
+    confidence: int
+    tags: List[str]
+    processing_time_ms: int
