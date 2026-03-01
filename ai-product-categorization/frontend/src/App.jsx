@@ -198,74 +198,159 @@ export default function App() {
 // ----------------------------------------------------------------------------
 // VIEW 1: Voice-based Registration
 // ----------------------------------------------------------------------------
+const GOVT_FORMS = [
+    { id: 'udyam', title: 'MSME Udyam Registration', desc: 'Official government registration for micro, small and medium enterprises.' },
+    { id: 'gst', title: 'GST Registration (CMP-02)', desc: 'Simplified GST registration for small businesses under composition scheme.' },
+    { id: 'ondc', title: 'ONDC Network Participant', desc: 'Onboarding form to become a registered seller on the ONDC network.' }
+];
+
 function RegistrationView() {
+    const [selectedForm, setSelectedForm] = useState(null);
     const [text, setText] = useState('');
-    const [parsedData, setParsedData] = useState(null);
+    const [formData, setFormData] = useState(null);
     const [analyzing, setAnalyzing] = useState(false);
+
+    if (!selectedForm) {
+        return (
+            <div className="animate-fade-in">
+                <div style={{ marginBottom: '24px' }}>
+                    <h2 style={{ fontSize: '24px', marginBottom: '8px' }}>1️⃣ Voice-based Auto Registration</h2>
+                    <p style={{ color: 'var(--text-muted)' }}>Select an official government or network form to begin voice-assisted auto-filling.</p>
+                </div>
+                <div className="grid-3">
+                    {GOVT_FORMS.map(form => (
+                        <div key={form.id} className="card" style={{ cursor: 'pointer', borderTop: '4px solid #3b82f6' }} onClick={() => setSelectedForm(form)}>
+                            <h3 style={{ fontSize: '18px', marginBottom: '8px' }}>{form.title}</h3>
+                            <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>{form.desc}</p>
+                            <button className="btn btn-outline" style={{ marginTop: '16px', width: '100%' }}>Select Form</button>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
 
     const handleProcess = () => {
         setAnalyzing(true);
-        setParsedData(null);
+        setFormData(null);
 
-        // Simple mock logic based on keywords
+        // Simple mock AI logic to extract fields based on voice and selected form
         setTimeout(() => {
             const lowerText = text.toLowerCase();
-            setParsedData({
-                location: lowerText.includes('kanpur') ? 'Kanpur' : (lowerText.includes('delhi') ? 'Delhi' : 'Unknown'),
-                material: lowerText.includes('leather') ? 'Leather' : (lowerText.includes('cotton') ? 'Cotton' : 'Varies'),
-                product: lowerText.includes('shoes') || lowerText.includes('joote') ? 'Shoes' : (lowerText.includes('shirt') ? 'Shirts' : 'Apparel/Footwear'),
-                business_type: lowerText.includes('banate') || lowerText.includes('make') ? 'Manufacturer' : 'Retailer'
-            });
+            let mockData = {};
+
+            if (selectedForm.id === 'udyam') {
+                mockData = {
+                    businessName: lowerText.includes('naam') || lowerText.includes('name') ? 'Kanpur Leather Works' : '',
+                    businessType: lowerText.includes('banate') || lowerText.includes('manufacturing') ? 'Manufacturing' : 'Services',
+                    location: lowerText.includes('kanpur') ? 'Kanpur, UP' : '',
+                    aadhaarNumber: lowerText.includes('aadhaar') ? 'XXXX-XXXX-XXXX' : ''
+                };
+            } else if (selectedForm.id === 'gst') {
+                mockData = {
+                    legalName: '',
+                    state: lowerText.includes('delhi') ? 'Delhi' : (lowerText.includes('kanpur') ? 'Uttar Pradesh' : ''),
+                    turnover: lowerText.includes('lakh') ? 'Below 40 Lakhs' : '',
+                    panNumber: lowerText.includes('pan') ? 'ABCDE1234F' : ''
+                };
+            } else {
+                mockData = {
+                    storeName: lowerText.includes('naam') ? 'Kanpur Works' : '',
+                    category: lowerText.includes('shoe') || lowerText.includes('joote') ? 'Footwear' : 'Apparel',
+                    pincode: lowerText.includes('kanpur') ? '208001' : '',
+                    deliveryRadius: 'PAN India'
+                };
+            }
+
+            // Populate based on text for a realistic feel regardless of form
+            if (lowerText.includes('kanpur leather shoes') || lowerText.includes('kanpur se leather shoes')) {
+                mockData.businessName = mockData.businessName || 'Kanpur Leather Works';
+                mockData.productCategory = mockData.productCategory || 'Leather Footwear';
+                mockData.location = 'Kanpur, Uttar Pradesh';
+            }
+            if (lowerText.includes('mera naam anmol') || lowerText.includes('my name is anmol')) {
+                mockData.ownerName = 'Anmol';
+            }
+
+            setFormData(mockData);
             setAnalyzing(false);
-        }, 1500);
+        }, 2000);
+    };
+
+    const handleBack = () => {
+        setSelectedForm(null);
+        setText('');
+        setFormData(null);
     };
 
     return (
         <div className="animate-fade-in">
-            <div style={{ marginBottom: '24px' }}>
-                <h2 style={{ fontSize: '24px', marginBottom: '8px' }}>1️⃣ Voice-based Auto Registration</h2>
-                <p style={{ color: 'var(--text-muted)' }}>Tap the microphone and speak naturally in Hindi or English (e.g., "Hum Kanpur se leather shoes banate hain"). The AI will extract your profile details.</p>
+            <div style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <button onClick={handleBack} className="btn btn-outline" style={{ padding: '6px 12px' }}>← Back to Forms</button>
+                <div>
+                    <h2 style={{ fontSize: '24px', marginBottom: '4px' }}>{selectedForm.title}</h2>
+                    <p style={{ color: 'var(--text-muted)' }}>Voice Assisted Form Filling</p>
+                </div>
             </div>
 
             <div className="grid-2">
                 <div className="card">
+                    <h3 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <MicIcon /> Voice Details
+                    </h3>
+                    <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '16px' }}>
+                        Tap the microphone and speak your details. E.g., "Mera naam Anmol hai aur hum Kanpur se leather shoes banate hain."
+                    </p>
                     <VoiceInputBox
                         value={text}
                         onChange={setText}
-                        placeholder='Tap the microphone icon and say: "Hum Kanpur se leather shoes banate hain..."'
+                        placeholder={`Describe your business details for ${selectedForm.title}...`}
                         onSubmit={handleProcess}
-                        submitLabel={analyzing ? "Extracting Details..." : "Process Registration"}
+                        submitLabel={analyzing ? "AI is Analyzing..." : "Autofill Form via AI"}
                         icon={SparklesIcon}
-                        height="200px"
+                        height="180px"
                     />
                 </div>
 
                 <div className="card">
                     <h3 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <StoreIcon /> Business Profile Preview
+                        <FileIcon /> Extracted Form Fields
                     </h3>
 
-                    <div className="input-group">
-                        <label className="input-label">Identified Product / Service</label>
-                        <input type="text" className="input-control" readOnly value={parsedData?.product || ''} placeholder="Waiting for processing..." />
-                    </div>
-                    <div className="input-group">
-                        <label className="input-label">Business Type</label>
-                        <input type="text" className="input-control" readOnly value={parsedData?.business_type || ''} placeholder="Waiting for processing..." />
-                    </div>
-                    <div className="grid-2" style={{ gap: '16px' }}>
-                        <div className="input-group">
-                            <label className="input-label">Location</label>
-                            <input type="text" className="input-control" readOnly value={parsedData?.location || ''} placeholder="Waiting for processing..." />
+                    {!formData ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '240px', color: 'var(--text-muted)', textAlign: 'center' }}>
+                            {analyzing ? (
+                                <>
+                                    <div className="animate-spin" style={{ width: '32px', height: '32px', border: '3px solid #f1f5f9', borderTopColor: '#3b82f6', borderRadius: '50%', marginBottom: '16px' }} />
+                                    Parsing your voice into specific form fields...
+                                </>
+                            ) : (
+                                "Form fields will appear here automatically after you speak your details."
+                            )}
                         </div>
-                        <div className="input-group">
-                            <label className="input-label">Core Material</label>
-                            <input type="text" className="input-control" readOnly value={parsedData?.material || ''} placeholder="Waiting for processing..." />
-                        </div>
-                    </div>
-                    {parsedData && (
-                        <div className="animate-fade-in" style={{ marginTop: '24px', padding: '12px', background: '#ecfdf5', borderRadius: '8px', color: '#065f46', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <CheckCircleIcon /> Registration Data Extracted Successfully!
+                    ) : (
+                        <div className="animate-fade-in">
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                {Object.entries(formData).map(([key, val]) => (
+                                    <div className="input-group" key={key} style={{ marginBottom: '0' }}>
+                                        <label className="input-label" style={{ textTransform: 'capitalize', fontSize: '12px', color: '#64748b' }}>
+                                            {key.replace(/([A-Z])/g, ' $1').trim()}
+                                        </label>
+                                        <input
+                                            type="text"
+                                            className="input-control"
+                                            value={val}
+                                            onChange={(e) => setFormData({ ...formData, [key]: e.target.value })}
+                                            style={{ borderColor: val ? '#3b82f6' : '#e2e8f0', background: val ? '#eff6ff' : 'white' }}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div style={{ marginTop: '24px', padding: '12px', background: '#ecfdf5', borderRadius: '8px', color: '#065f46', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <CheckCircleIcon /> Form filled! Review details & save.
+                            </div>
+                            <button className="btn btn-primary" style={{ width: '100%', marginTop: '16px' }}>Submit Official Form</button>
                         </div>
                     )}
                 </div>
