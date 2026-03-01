@@ -19,37 +19,54 @@ export default function VoiceFormFill({ params }) {
     const [guidedActive, setGuidedActive] = useState(false);
     const [language, setLanguage] = useState('hi-IN');
 
-    // Advanced Voice Selector to force Native Indian accents instead of default English robotic voices
+    // Advanced Voice Selector to force completely natural cloud Indian accents
     const speakNativeTTS = (text, langCode, onEndCallback) => {
         window.speechSynthesis.cancel();
+
+        try {
+            // Extract base language code (e.g., 'ta-IN' -> 'ta')
+            const lang = langCode.split('-')[0];
+
+            // Generate a direct stream from Google's high-fidelity Cloud TTS endpoint
+            const url = `https://translate.googleapis.com/translate_tts?client=gtx&ie=UTF-8&tl=${lang}&q=${encodeURIComponent(text)}`;
+            const audio = new Audio(url);
+
+            audio.playbackRate = 0.95; // Slightly slower for conversational tone
+
+            audio.onended = () => {
+                if (onEndCallback) onEndCallback();
+            };
+
+            audio.onerror = () => {
+                fallbackSyntheticTTS(text, langCode, onEndCallback);
+            };
+
+            audio.play().catch(e => {
+                fallbackSyntheticTTS(text, langCode, onEndCallback);
+            });
+        } catch (e) {
+            fallbackSyntheticTTS(text, langCode, onEndCallback);
+        }
+    };
+
+    // Fallback if network stream gets blocked by browser policies
+    const fallbackSyntheticTTS = (text, langCode, onEndCallback) => {
         const msg = new SpeechSynthesisUtterance(text);
         msg.lang = langCode;
-        msg.rate = 0.95; // slightly slower for more natural realistic tone
-        msg.pitch = 1.05; // slightly higher pitch
+        msg.rate = 0.95;
+        msg.pitch = 1.05;
 
         const voices = window.speechSynthesis.getVoices();
-
-        // 1. Try to find a premium Google Voice for this exact language first
         let bestVoice = voices.find(v => v.lang.includes(langCode) && v.name.includes('Google'));
-
-        // 2. Try any native voice for this exact language (Microsoft, natural, etc)
         if (!bestVoice) bestVoice = voices.find(v => v.lang.includes(langCode));
-
-        // 3. Fallback to just the base language code (e.g. 'ta' instead of 'ta-IN')
         if (!bestVoice && langCode.includes('-')) {
             const baseLang = langCode.split('-')[0];
             bestVoice = voices.find(v => v.lang.startsWith(baseLang) && v.name.includes('Google'));
             if (!bestVoice) bestVoice = voices.find(v => v.lang.startsWith(baseLang));
         }
 
-        if (bestVoice) {
-            msg.voice = bestVoice;
-        }
-
-        if (onEndCallback) {
-            msg.onend = onEndCallback;
-        }
-
+        if (bestVoice) msg.voice = bestVoice;
+        if (onEndCallback) msg.onend = onEndCallback;
         window.speechSynthesis.speak(msg);
     };
 
