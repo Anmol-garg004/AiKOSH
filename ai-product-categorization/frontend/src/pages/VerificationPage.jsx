@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 
 export default function VerificationPage() {
     const [file, setFile] = useState(null);
     const [docType, setDocType] = useState('gst'); // gst, pan, udyam
+    const fileInputRef = useRef(null);
     const [status, setStatus] = useState('idle'); // idle, verifying, success
     const [result, setResult] = useState(null);
 
@@ -99,8 +100,21 @@ export default function VerificationPage() {
                             flexDirection: 'column',
                             justifyContent: 'center'
                         }}
-                        onClick={() => { setFile("scanned_document_copy.pdf"); setStatus('idle'); setResult(null); }}
+                        onClick={() => fileInputRef.current && fileInputRef.current.click()}
                     >
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            style={{ display: 'none' }}
+                            accept=".pdf, .jpg, .jpeg, .png"
+                            onChange={(e) => {
+                                if (e.target.files && e.target.files[0]) {
+                                    setFile(e.target.files[0].name);
+                                    setStatus('idle');
+                                    setResult(null);
+                                }
+                            }}
+                        />
                         <div style={{ color: file ? '#3B82F6' : '#94A3B8', marginBottom: '12px', display: 'flex', justifyContent: 'center' }}>
                             <FileIcon />
                         </div>
