@@ -1,0 +1,60 @@
+[
+    {
+        "id": "udyam-001",
+        "name": "Udyam Registration",
+        "authority": "Ministry of MSME",
+        "description": "Official MSME business registration form for small and medium enterprises.",
+        "fields": [
+            "owner_name",
+            "business_name",
+            "aadhaar",
+            "pan",
+            "address",
+            "city",
+            "district",
+            "state",
+            "pincode",
+            "activity_type",
+            "investment_amount"
+        ]
+    },
+    {
+        "id": "gst-01",
+        "name": "GST Registration (REG-01)",
+        "authority": "CBIC",
+        "description": "Goods & Services Tax enrollment for businesses.",
+        "fields": [
+            "legal_name",
+            "pan",
+            "state",
+            "turnover",
+            "pincode"
+        ]
+    },
+    {
+        "id": "shop-est-01",
+        "name": "Shop & Establishment Act",
+        "authority": "State Labour Dept.",
+        "description": "Local business licensing and registration.",
+        "fields": [
+            "owner_name",
+            "business_name",
+            "address",
+            "state",
+            "employee_count"
+        ]
+    },
+    {
+        "id": "fssai-01",
+        "name": "FSSAI Basic Registration",
+        "authority": "Food Safety Dept.",
+        "description": "Food business operator basic license.",
+        "fields": [
+            "owner_name",
+            "business_name",
+            "food_category",
+            "address",
+            "pincode"
+        ]
+    }
+]
