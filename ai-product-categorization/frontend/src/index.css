@@ -62,13 +62,16 @@ body {
 .app-container {
   min-height: 100vh;
   display: flex;
-  flexDirection: column;
+  flex-direction: column;
 }
 
 .gov-header {
   background: var(--primary);
   color: white;
   padding: 16px 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  position: relative;
+  z-index: 10;
 }
 
 .header-content {
