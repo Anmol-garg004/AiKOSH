@@ -75,30 +75,32 @@ const VoiceInputBox = ({ value, onChange, placeholder, onSubmit, submitLabel, ic
     });
 
     return (
-        <div style={{ position: 'relative', width: '100%', marginBottom: '16px' }}>
-            <textarea
-                className="input-control"
-                style={{ width: '100%', minHeight: height, paddingRight: '60px', paddingBottom: '60px', resize: 'vertical' }}
-                placeholder={placeholder}
-                value={value}
-                onChange={(e) => onChange(e.target.value)}
-            />
-            <div style={{ position: 'absolute', bottom: '16px', right: '16px', display: 'flex', gap: '8px', alignItems: 'center' }}>
-                {isListening && <span style={{ color: '#ef4444', fontSize: '12px', fontWeight: '500', animation: 'pulse 1.5s infinite' }}>Listening...</span>}
-                <button
-                    onClick={toggleListening}
-                    style={{
-                        width: '40px', height: '40px', borderRadius: '50%', border: 'none',
-                        background: isListening ? '#fee2e2' : '#f1f5f9',
-                        color: isListening ? '#ef4444' : '#64748b',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        cursor: 'pointer', transition: 'all 0.2s',
-                        boxShadow: isListening ? '0 0 0 4px rgba(239, 68, 68, 0.2)' : 'none'
-                    }}
-                    title={isListening ? "Stop listening" : "Start speaking"}
-                >
-                    {isListening ? <MicOffIcon /> : <MicIcon />}
-                </button>
+        <div style={{ width: '100%', marginBottom: '16px' }}>
+            <div style={{ position: 'relative', width: '100%' }}>
+                <textarea
+                    className="input-control"
+                    style={{ width: '100%', minHeight: height, paddingRight: '60px', paddingBottom: '60px', resize: 'vertical' }}
+                    placeholder={placeholder}
+                    value={value}
+                    onChange={(e) => onChange(e.target.value)}
+                />
+                <div style={{ position: 'absolute', bottom: '16px', right: '16px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    {isListening && <span style={{ color: '#ef4444', fontSize: '12px', fontWeight: '500', animation: 'pulse 1.5s infinite' }}>Listening...</span>}
+                    <button
+                        onClick={toggleListening}
+                        style={{
+                            width: '40px', height: '40px', borderRadius: '50%', border: 'none',
+                            background: isListening ? '#fee2e2' : '#f1f5f9',
+                            color: isListening ? '#ef4444' : '#64748b',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            cursor: 'pointer', transition: 'all 0.2s',
+                            boxShadow: isListening ? '0 0 0 4px rgba(239, 68, 68, 0.2)' : 'none'
+                        }}
+                        title={isListening ? "Stop listening" : "Start speaking"}
+                    >
+                        {isListening ? <MicOffIcon /> : <MicIcon />}
+                    </button>
+                </div>
             </div>
             {onSubmit && (
                 <button className="btn btn-primary" onClick={onSubmit} disabled={!value} style={{ width: '100%', marginTop: '16px' }}>
