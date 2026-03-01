@@ -1,18 +1,137 @@
-import React from 'react';
+import React, { useState } from 'react';
+import MicrophoneButton from '../components/MicrophoneButton';
 
 export default function CategorizationPage() {
+    const [desc, setDesc] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [result, setResult] = useState(null);
+    const [status, setStatus] = useState('Idle');
+
+    const handleCategorize = () => {
+        if (!desc) return;
+        setLoading(true);
+        setResult(null);
+
+        // Mock AI Categorization processing
+        setTimeout(() => {
+            const lowerDesc = desc.toLowerCase();
+            setResult({
+                path: ["Apparel", "Women", "Ethnic Wear", "Kurti"],
+                material: lowerDesc.includes('cotton') ? "Cotton" : (lowerDesc.includes('silk') ? "Silk" : "Mixed"),
+                category: lowerDesc.includes('kurti') ? "Kurti" : "Apparel",
+                gender: "Women",
+                confidence: 96,
+                tags: ["Fashion", "Ethnic", "Indian Wear"]
+            });
+            setLoading(false);
+        }, 1500);
+    }
+
+    const handleTranscriptUpdate = (newText) => {
+        setDesc(prev => {
+            const prefix = prev ? prev.trim() + ' ' : '';
+            return prefix + newText;
+        });
+    };
+
     return (
-        <div className="fade-in" style={{ padding: '24px' }}>
+        <div className="fade-in">
+            <style>
+                {`
+                @keyframes local-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+                .anim-spin { animation: local-spin 1s linear infinite; }
+                `}
+            </style>
+
             <div className="page-header">
                 <h2 className="page-title">AI Product Categorisation</h2>
-                <p className="page-desc">Speak out exactly what you sell. We'll map it to the correct ONDC hierarchy.</p>
+                <p className="page-desc">Speak or type exactly what you sell. We will automatically map it to the correct ONDC taxonomy hierarchy.</p>
             </div>
-            <div className="card">
-                <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                    <div style={{ fontSize: '48px', marginBottom: '16px' }}>🏷️</div>
-                    <h3 style={{ marginBottom: '8px' }}>Categorisation Engine (Draft)</h3>
-                    <p>This module is currently being integrated with the new design system.</p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <div className="card">
+                    <h3 style={{ marginBottom: '16px', fontSize: '16px', color: '#334155' }}>Describe your product (Voice or Text)</h3>
+
+                    <div style={{ display: 'flex', gap: '32px', alignItems: 'center' }}>
+                        <div style={{ flex: 1 }}>
+                            <textarea
+                                className="gov-input"
+                                style={{ width: '100%', minHeight: '160px', padding: '16px', resize: 'vertical', fontSize: '16px' }}
+                                placeholder='For example: "Handmade cotton kurti for women..."'
+                                value={desc}
+                                onChange={(e) => setDesc(e.target.value)}
+                            />
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '160px', padding: '24px', background: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
+                            <MicrophoneButton
+                                onTranscriptUpdate={handleTranscriptUpdate}
+                                onStatusChange={setStatus}
+                            />
+                            <span style={{ fontSize: '13px', marginTop: '16px', color: 'var(--text-muted)', fontWeight: '500', textAlign: 'center' }}>{status}</span>
+                        </div>
+                    </div>
+
+                    <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-start' }}>
+                        <button
+                            className="btn btn-primary btn-large"
+                            onClick={handleCategorize}
+                            disabled={!desc || loading}
+                        >
+                            {loading ? (
+                                <>
+                                    <span className="anim-spin" style={{ display: 'inline-block', width: '16px', height: '16px', border: '2px solid #ffffff', borderTopColor: 'transparent', borderRadius: '50%', marginRight: '8px' }}></span>
+                                    Analyzing Product...
+                                </>
+                            ) : 'Categorize via AI ✨'}
+                        </button>
+                    </div>
                 </div>
+
+                {result && (
+                    <div className="card fade-in" style={{ borderLeft: '4px solid var(--success)', background: '#FFFFFF' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+                            <div>
+                                <h3 style={{ fontSize: '20px', color: 'var(--primary)', marginBottom: '4px' }}>Predicted Taxonomy Results</h3>
+                                <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Mapped to ONDC Network Standards</div>
+                            </div>
+                            <div className="badge badge-success" style={{ fontSize: '14px', padding: '8px 16px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                <span>AI Confidence:</span> <strong>{result.confidence}%</strong>
+                            </div>
+                        </div>
+
+                        <div style={{ marginBottom: '32px', background: '#F8FAFC', padding: '24px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                            <div style={{ fontSize: '13px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '12px', fontWeight: '600', letterSpacing: '0.5px' }}>
+                                Master Category Path
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                                {result.path.map((node, i) => (
+                                    <React.Fragment key={i}>
+                                        <div style={{ background: '#DBEAFE', color: '#1E40AF', fontSize: '15px', fontWeight: '500', padding: '8px 16px', borderRadius: '4px', border: '1px solid #BFDBFE' }}>
+                                            {node}
+                                        </div>
+                                        {i < result.path.length - 1 && <span style={{ color: '#94A3B8', fontWeight: 'bold' }}>▶</span>}
+                                    </React.Fragment>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="grid-3" style={{ gap: '24px' }}>
+                            <div style={{ padding: '20px', background: 'white', border: '1px solid var(--border)', borderRadius: '8px' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px', fontWeight: '600' }}>Core Material</div>
+                                <div style={{ fontWeight: '600', fontSize: '18px', color: 'var(--text-main)' }}>{result.material}</div>
+                            </div>
+                            <div style={{ padding: '20px', background: 'white', border: '1px solid var(--border)', borderRadius: '8px' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px', fontWeight: '600' }}>Target Audience</div>
+                                <div style={{ fontWeight: '600', fontSize: '18px', color: 'var(--text-main)' }}>{result.gender}</div>
+                            </div>
+                            <div style={{ padding: '20px', background: 'white', border: '1px solid var(--border)', borderRadius: '8px' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px', fontWeight: '600' }}>Extracted Tags</div>
+                                <div style={{ fontWeight: '500', fontSize: '16px', color: '#64748B' }}>#{result.tags.join(" #")}</div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
