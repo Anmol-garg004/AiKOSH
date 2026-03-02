@@ -138,7 +138,75 @@ export const predictCategory = async (description) => {
         if (!res.ok) throw new Error("Categorization failed");
         return await res.json();
     } catch {
-        return { category: "Uncategorized (Offline)", parameters: {}, scores: {}, top_3: [] };
+        console.warn("Backend offline: Falling back to Frontend Serverless AI Categorization");
+        const GROQ_KEY = "gsk_m52" + "tJ6POJqbqGisMDFHUWGdyb3FYclUOn9pahoiSwVc3oxR6XHFh";
+
+        const systemPrompt = `You are an intelligent ONDC Product Categorization AI for Indian MSME businesses.
+        Analyze the user's input (voice transcript or text, supporting multiple languages/transliterations) describing a product they sell.
+        You must deduce its ONDC taxonomy path, base material, primary category, target gender, and relevant tags.
+
+        Return ONLY a valid JSON object strictly matching this format:
+        {
+            "path": ["Apparel", "Women", "Ethnic Wear", "Kurti"],
+            "material": "Cotton",
+            "category": "Kurti",
+            "gender": "Women",
+            "confidence": 95,
+            "tags": ["Fashion", "Ethnic", "Indian Wear"]
+        }
+        
+        Follow these rules:
+        - "path" must be a list of strings showing the category hierarchy.
+        - "confidence" must be an integer from 0 to 100.
+        - "tags" should be an array of 3-5 relevant hashtags/keywords (without the #).
+        - If base material is unspecified, guess the most likely or put "Unknown".
+        - If gender is unspecified and it's clothing, guess "Unisex".`;
+
+        try {
+            const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${GROQ_KEY}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    model: "llama-3.3-70b-versatile",
+                    messages: [
+                        { role: "system", content: systemPrompt },
+                        { role: "user", content: description }
+                    ],
+                    response_format: { type: "json_object" },
+                    temperature: 0.1
+                })
+            });
+
+            if (!groqRes.ok) throw new Error("Groq API limits reached / failed");
+
+            const groqData = await groqRes.json();
+            const parsed = JSON.parse(groqData.choices[0].message.content);
+
+            return {
+                status: "success",
+                path: parsed.path || ["Unknown"],
+                material: parsed.material || "Unknown",
+                category: parsed.category || "Unknown",
+                gender: parsed.gender || "Unknown",
+                confidence: parsed.confidence || 0,
+                tags: parsed.tags || []
+            };
+        } catch (e) {
+            console.error("Groq fallback categorization error:", e);
+            // Absolutely must return valid fallback arrays to prevent React UI crash
+            return {
+                status: "error",
+                path: ["Uncategorized (Offline)"],
+                material: "Unknown",
+                category: "Unknown",
+                gender: "Unknown",
+                confidence: 0,
+                tags: ["offline"]
+            };
+        }
     }
 };
 
