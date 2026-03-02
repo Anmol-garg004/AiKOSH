@@ -25,15 +25,13 @@ export default function VoiceFormFill({ params }) {
 
         try {
             const encodedText = encodeURIComponent(text);
+            const baseLang = langCode.split('-')[0]; // google tts uses 2-letter codes like 'hi', 'ta', 'mr'
             const encodedLang = encodeURIComponent(langCode);
-            // Connect directly to the FastAPI Streaming endpoint utilizing Azure Edge TTS
-            const fullUrl = `${API_URL}/voice/speak?text=${encodedText}&language=${encodedLang}`;
 
-            // To ensure compatibility across local host vs deployed environments we pull the base URL from api.js if possible,
-            // but for simplicity, the application API_URL is mostly same host. Let's dynamically map it.
-            // Better: use the dynamic prefix.
+            // Priority 1: Instant Serverless Google Neural TTS (Ultra-Human Voice)
+            const googleUrl = `https://translate.googleapis.com/translate_tts?ie=UTF-8&client=gtx&tl=${baseLang}&q=${encodedText}`;
 
-            const audio = new Audio(fullUrl);
+            const audio = new Audio(googleUrl);
             audio.playbackRate = 1.0;
 
             audio.onended = () => {
@@ -41,11 +39,16 @@ export default function VoiceFormFill({ params }) {
             };
 
             audio.onerror = () => {
-                fallbackSyntheticTTS(text, langCode, onEndCallback); // fallback if backend routing fails
+                // Priority 2: Try Backend FastAPI Edge TTS
+                const backendUrl = `${API_URL}/voice/speak?text=${encodedText}&language=${encodedLang}`;
+                const bAudio = new Audio(backendUrl);
+                bAudio.onended = () => { if (onEndCallback) onEndCallback(); };
+                bAudio.onerror = () => { fallbackSyntheticTTS(text, langCode, onEndCallback); };
+                bAudio.play().catch(() => fallbackSyntheticTTS(text, langCode, onEndCallback));
             };
 
             audio.play().catch(e => {
-                fallbackSyntheticTTS(text, langCode, onEndCallback);
+                audio.onerror();
             });
         } catch (e) {
             fallbackSyntheticTTS(text, langCode, onEndCallback);
@@ -214,7 +217,7 @@ export default function VoiceFormFill({ params }) {
         if (guidedActive && transcript.trim().length > 0) {
             timeout = setTimeout(() => {
                 handleProcess();
-            }, 1200);
+            }, 600); // Wait just 600ms of speaking silence before fetching! Fast!
         }
         return () => clearTimeout(timeout);
     }, [transcript, guidedActive]);
