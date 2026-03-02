@@ -77,6 +77,28 @@ export const predictCategory = async (description) => {
     return res.json();
 };
 
+const fallbackPrompts = {
+    "hi-IN": {
+        "owner name": "आपका नाम क्या है?",
+        "business name": "आपके व्यवसाय का क्या नाम है?",
+        "aadhaar": "अपना आधार नंबर बताएं",
+        "pan": "अपना पैन नंबर बताएं",
+        "address": "अपना पता बताएं",
+        "city": "अपने शहर का नाम बताएं",
+        "district": "अपने जिले का नाम बताएं",
+        "state": "अपने राज्य का नाम बताएं",
+        "pincode": "अपना पिन कोड बताएं",
+        "activity type": "अपने व्यवसाय का प्रकार बताएं",
+        "investment amount": "अपनी निवेश राशि बताएं",
+        "legal name": "अपना कानूनी नाम बताएं",
+        "turnover": "अपना टर्नओवर बताएं",
+        "employee count": "आपके कर्मचारियों की संख्या क्या है?",
+        "food category": "अपनी खाद्य श्रेणी बताएं",
+        "completed": "धन्यवाद, फॉर्म पूरा हो गया है।"
+    },
+    // fallback logic builder mappings will automatically use this
+};
+
 export const generateGuidedPrompt = async (field, language) => {
     try {
         const res = await fetch(`${API_URL}/voice/prompt`, {
@@ -84,9 +106,27 @@ export const generateGuidedPrompt = async (field, language) => {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ field, language })
         });
-        if (!res.ok) return { prompt: `Please provide your ${field}` };
+
+        if (!res.ok) throw new Error("Backend response error");
+
         return await res.json();
-    } catch {
+    } catch (error) {
+        // Highly resilient native frontend fallback for offline mode
+        const normalizedField = field.toLowerCase().replace(/_/g, " ");
+
+        if (language === "hi-IN" && fallbackPrompts["hi-IN"][normalizedField]) {
+            return { prompt: fallbackPrompts["hi-IN"][normalizedField] };
+        } else if (language === "hi-IN" && normalizedField.startsWith("verify: ")) {
+            const val = normalizedField.split("verify: ")[1];
+            return { prompt: `आपने कहा: ${val}। क्या यह जानकारी सही है?` };
+        }
+
+        if (normalizedField === "completed") {
+            return { prompt: "Thank you. The form is fully completed." };
+        } else if (normalizedField.startsWith("verify: ")) {
+            return { prompt: `You said: ${normalizedField.split("verify: ")[1]}. Is this correct?` };
+        }
+
         return { prompt: `Please provide your ${field}` };
     }
 };
