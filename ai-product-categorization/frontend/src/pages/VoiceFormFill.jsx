@@ -28,10 +28,10 @@ export default function VoiceFormFill({ params }) {
             const baseLang = langCode.split('-')[0]; // google tts uses 2-letter codes like 'hi', 'ta', 'mr'
             const encodedLang = encodeURIComponent(langCode);
 
-            // Priority 1: Instant Serverless Google Neural TTS (Ultra-Human Voice)
-            const googleUrl = `https://translate.googleapis.com/translate_tts?ie=UTF-8&client=gtx&tl=${baseLang}&q=${encodedText}`;
+            // Priority 1: Backend FastAPI Edge TTS (Ultra-Human Neural Voices)
+            const backendUrl = `${API_URL}/voice/speak?text=${encodedText}&language=${encodedLang}`;
 
-            const audio = new Audio(googleUrl);
+            const audio = new Audio(backendUrl);
             audio.playbackRate = 1.0;
 
             audio.onended = () => {
@@ -39,12 +39,13 @@ export default function VoiceFormFill({ params }) {
             };
 
             audio.onerror = () => {
-                // Priority 2: Try Backend FastAPI Edge TTS
-                const backendUrl = `${API_URL}/voice/speak?text=${encodedText}&language=${encodedLang}`;
-                const bAudio = new Audio(backendUrl);
-                bAudio.onended = () => { if (onEndCallback) onEndCallback(); };
-                bAudio.onerror = () => { fallbackSyntheticTTS(text, langCode, onEndCallback); };
-                bAudio.play().catch(() => fallbackSyntheticTTS(text, langCode, onEndCallback));
+                // Priority 2: Fallback to Google Neural/Standard TTS if Backend is offline
+                const googleUrl = `https://translate.googleapis.com/translate_tts?ie=UTF-8&client=gtx&tl=${baseLang}&q=${encodedText}`;
+                const gAudio = new Audio(googleUrl);
+                gAudio.playbackRate = 1.0;
+                gAudio.onended = () => { if (onEndCallback) onEndCallback(); };
+                gAudio.onerror = () => { fallbackSyntheticTTS(text, langCode, onEndCallback); };
+                gAudio.play().catch(() => fallbackSyntheticTTS(text, langCode, onEndCallback));
             };
 
             audio.play().catch(e => {

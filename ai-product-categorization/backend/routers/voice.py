@@ -55,29 +55,8 @@ VOICE_MAP = {
 
 @router.get("/speak")
 async def speak_text(text: str, language: str):
-    # Route problematic accents (Marathi, Gujarati, Punjabi) to Google's highly natural API
-    google_fallback = ["mr-IN", "gu-IN", "pa-IN"]
-    
-    if language in google_fallback:
-        # Map to 2-letter language code for Google Translate (e.g., 'mr-IN' -> 'mr')
-        lang = language.split("-")[0]
-        
-        import asyncio
-        def create_audio():
-            tts = gTTS(text=text, lang=lang, slow=False)
-            fp = io.BytesIO()
-            tts.write_to_fp(fp)
-            fp.seek(0)
-            return fp.read()
-            
-        audio_data = await asyncio.to_thread(create_audio)
-        
-        async def generate_google_audio():
-            yield audio_data
-            
-        return StreamingResponse(generate_google_audio(), media_type="audio/mpeg")
-
     voice = VOICE_MAP.get(language, "en-IN-NeerjaNeural")
+
 
     communicate = edge_tts.Communicate(text, voice, rate="-5%")
     
